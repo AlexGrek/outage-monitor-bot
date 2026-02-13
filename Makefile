@@ -1,4 +1,4 @@
-.PHONY: build run clean setcap install test dev api-key version-bump-patch version-bump-minor version-bump-major docker-build docker-build-local docker-stop-test docker-buildx-setup docker-build-amd64 docker-build-arm64 docker-build-multiarch docker-login docker-push docker-release docker-release-multiarch docker-run docker-tag docker-clean helm-create helm-package helm-install helm-upgrade helm-reinstall helm-uninstall helm-clean helm-status helm-logs production-patch production-minor production-major
+.PHONY: build run clean setcap install test dev api-key version-bump-patch version-bump-minor version-bump-major docker-build docker-build-local docker-stop-test docker-buildx-setup docker-build-amd64 docker-build-arm64 docker-build-multiarch docker-login docker-push docker-release docker-release-multiarch docker-run docker-tag docker-clean helm-create helm-package helm-install helm-upgrade helm-reinstall helm-uninstall helm-clean helm-status helm-logs helm-api-key production-patch production-minor production-major
 
 # Build variables
 BINARY_NAME=tg-monitor-bot
@@ -367,6 +367,14 @@ helm-status:
 helm-logs:
 	@kubectl logs -n $(HELM_NAMESPACE) -l app.kubernetes.io/name=$(HELM_CHART_NAME) --tail=50 -f
 
+# Get API key from production
+helm-api-key:
+	@echo "Retrieving API key from Kubernetes secret..."
+	@echo ""
+	@kubectl get secret $(HELM_RELEASE_NAME)-env -n $(HELM_NAMESPACE) -o jsonpath='{.data.API_KEY}' 2>/dev/null | base64 -d && echo "" || echo "⚠️  Secret not found or API_KEY not set"
+	@echo ""
+	@echo "Use this key to access the dashboard or API"
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -418,6 +426,7 @@ help:
 	@echo "  make helm-uninstall - Uninstall chart from Kubernetes"
 	@echo "  make helm-status    - Check deployment status and resource usage"
 	@echo "  make helm-logs      - Follow pod logs"
+	@echo "  make helm-api-key   - Get API key from production secret"
 	@echo "  make helm-clean     - Remove packaged charts"
 	@echo ""
 	@echo "Production Deployment (Kubernetes):"

@@ -96,6 +96,9 @@ env:
   # API configuration
   API_ENABLED: "true"
   API_PORT: "8080"
+  # ⚠️ WARNING: Default API key is insecure!
+  # Generate secure key: openssl rand -hex 32
+  # Or use: make helm-regenerate-api-key
   API_KEY: "change-me-to-secure-api-key"
 
   # Auto-restart configuration
