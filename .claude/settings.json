@@ -14,7 +14,8 @@
       "Bash(kubectl describe:*)",
       "Bash(kubectl logs:*)",
       "Bash(git -C /Users/vedmedik/dev/tg-monitor-bot ls-files)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(kubectl exec:*)"
     ]
   }
 }

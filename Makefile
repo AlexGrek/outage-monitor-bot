@@ -1,4 +1,4 @@
-.PHONY: build run clean setcap install test dev api-key version-bump-patch version-bump-minor version-bump-major docker-build docker-build-local docker-stop-test docker-buildx-setup docker-build-amd64 docker-build-arm64 docker-build-multiarch docker-login docker-push docker-release docker-release-multiarch docker-run docker-tag docker-clean helm-create helm-package helm-install helm-upgrade helm-reinstall helm-uninstall helm-clean production-patch production-minor production-major
+.PHONY: build run clean setcap install test dev api-key version-bump-patch version-bump-minor version-bump-major docker-build docker-build-local docker-stop-test docker-buildx-setup docker-build-amd64 docker-build-arm64 docker-build-multiarch docker-login docker-push docker-release docker-release-multiarch docker-run docker-tag docker-clean helm-create helm-package helm-install helm-upgrade helm-reinstall helm-uninstall helm-clean helm-status helm-logs production-patch production-minor production-major
 
 # Build variables
 BINARY_NAME=tg-monitor-bot
@@ -345,6 +345,28 @@ helm-reinstall:
 	@$(MAKE) helm-install
 	@echo "Helm chart reinstalled successfully"
 
+# Check Kubernetes deployment status
+helm-status:
+	@echo "=== Pod Status ==="
+	@kubectl get pods -n $(HELM_NAMESPACE) -l app.kubernetes.io/name=$(HELM_CHART_NAME)
+	@echo ""
+	@echo "=== Resource Usage ==="
+	@kubectl top pod -n $(HELM_NAMESPACE) -l app.kubernetes.io/name=$(HELM_CHART_NAME) 2>/dev/null || echo "⚠️  Metrics server not available"
+	@echo ""
+	@echo "=== Resource Limits ==="
+	@kubectl describe pod -n $(HELM_NAMESPACE) -l app.kubernetes.io/name=$(HELM_CHART_NAME) | grep -A2 "Limits:" | head -3
+	@kubectl describe pod -n $(HELM_NAMESPACE) -l app.kubernetes.io/name=$(HELM_CHART_NAME) | grep -A2 "Requests:" | head -3
+	@echo ""
+	@echo "=== Services ==="
+	@kubectl get svc -n $(HELM_NAMESPACE) -l app.kubernetes.io/instance=$(HELM_RELEASE_NAME)
+	@echo ""
+	@echo "=== Recent Events ==="
+	@kubectl get events -n $(HELM_NAMESPACE) --sort-by='.lastTimestamp' | grep $(HELM_CHART_NAME) | tail -5 || echo "No recent events"
+
+# View logs
+helm-logs:
+	@kubectl logs -n $(HELM_NAMESPACE) -l app.kubernetes.io/name=$(HELM_CHART_NAME) --tail=50 -f
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -394,6 +416,8 @@ help:
 	@echo "  make helm-upgrade   - Upgrade existing installation"
 	@echo "  make helm-reinstall - Uninstall and reinstall chart"
 	@echo "  make helm-uninstall - Uninstall chart from Kubernetes"
+	@echo "  make helm-status    - Check deployment status and resource usage"
+	@echo "  make helm-logs      - Follow pod logs"
 	@echo "  make helm-clean     - Remove packaged charts"
 	@echo ""
 	@echo "Production Deployment (Kubernetes):"

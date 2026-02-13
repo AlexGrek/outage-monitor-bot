@@ -4,10 +4,10 @@ description: A Helm chart for Telegram Outage Monitoring Bot
 type: application
 
 # Chart version - incremented with each change
-version: 1.0.5
+version: 1.0.6
 
 # Application version
-appVersion: "1.0.5"
+appVersion: "1.0.6"
 
 keywords:
   - telegram

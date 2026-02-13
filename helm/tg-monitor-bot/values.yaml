@@ -60,12 +60,14 @@ ingress:
   #      - monitor.example.com
 
 resources:
+  # Resource limits based on actual usage (1m CPU, 23Mi memory)
+  # Requests set for guaranteed allocation, limits allow bursting
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 100m      # 100x actual usage (plenty of headroom)
+    memory: 128Mi  # 5.5x actual usage (room for spikes)
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 10m       # 10x actual usage (minimal baseline)
+    memory: 32Mi   # 1.4x actual usage (efficient scheduling)
 
 # Persistence for BoltDB
 persistence:

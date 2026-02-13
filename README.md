@@ -547,16 +547,28 @@ make helm-clean        # Remove packaged charts
 #### Check Deployment Status
 
 ```bash
-# View pod status
-kubectl get pods -n default -l app.kubernetes.io/name=tg-monitor-bot
+# Complete status (recommended)
+make helm-status
 
-# View logs
+# Or manually:
+kubectl get pods -n default -l app.kubernetes.io/name=tg-monitor-bot
 kubectl logs -n default -l app.kubernetes.io/name=tg-monitor-bot --tail=50
+
+# Follow logs in real-time
+make helm-logs
 
 # Check health
 kubectl port-forward -n default svc/tg-monitor-bot 8080:80
 curl http://localhost:8080/health
 ```
+
+#### Resource Usage
+
+The application is highly efficient:
+- **CPU**: ~1m (0.001 cores) - Request: 10m, Limit: 100m
+- **Memory**: ~23Mi - Request: 32Mi, Limit: 128Mi
+
+This allows running many instances on minimal hardware while providing headroom for traffic spikes.
 
 ### Docker (Traditional)
 
