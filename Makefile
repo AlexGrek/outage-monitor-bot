@@ -1,4 +1,4 @@
-.PHONY: build run clean setcap install test dev api-key version-bump-patch version-bump-minor version-bump-major docker-build docker-build-local docker-stop-test docker-buildx-setup docker-build-amd64 docker-build-arm64 docker-build-multiarch docker-login docker-push docker-release docker-release-multiarch docker-run docker-tag docker-clean helm-create helm-package helm-install helm-upgrade helm-uninstall helm-clean
+.PHONY: build run clean setcap install test dev api-key version-bump-patch version-bump-minor version-bump-major docker-build docker-build-local docker-stop-test docker-buildx-setup docker-build-amd64 docker-build-arm64 docker-build-multiarch docker-login docker-push docker-release docker-release-multiarch docker-run docker-tag docker-clean helm-create helm-package helm-install helm-upgrade helm-reinstall helm-uninstall helm-clean production-patch production-minor production-major
 
 # Build variables
 BINARY_NAME=tg-monitor-bot
@@ -315,6 +315,36 @@ helm-clean:
 	rm -f helm/*.tgz
 	@echo "Helm packages cleaned"
 
+# Production deployment targets
+production-patch: version-bump-patch docker-build-multiarch helm-reinstall
+	@echo ""
+	@echo "✓ Production patch release complete!"
+	@echo "  Version: $$(cat VERSION)"
+	@echo "  Image: $(DOCKER_TAG)"
+	@echo "  Helm: $(HELM_RELEASE_NAME) (namespace: $(HELM_NAMESPACE))"
+
+production-minor: version-bump-minor docker-build-multiarch helm-reinstall
+	@echo ""
+	@echo "✓ Production minor release complete!"
+	@echo "  Version: $$(cat VERSION)"
+	@echo "  Image: $(DOCKER_TAG)"
+	@echo "  Helm: $(HELM_RELEASE_NAME) (namespace: $(HELM_NAMESPACE))"
+
+production-major: version-bump-major docker-build-multiarch helm-reinstall
+	@echo ""
+	@echo "✓ Production major release complete!"
+	@echo "  Version: $$(cat VERSION)"
+	@echo "  Image: $(DOCKER_TAG)"
+	@echo "  Helm: $(HELM_RELEASE_NAME) (namespace: $(HELM_NAMESPACE))"
+
+# Reinstall Helm chart (uninstall + install)
+helm-reinstall:
+	@echo "Reinstalling Helm chart..."
+	@helm uninstall $(HELM_RELEASE_NAME) --namespace $(HELM_NAMESPACE) 2>/dev/null || true
+	@sleep 2
+	@$(MAKE) helm-install
+	@echo "Helm chart reinstalled successfully"
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -362,8 +392,14 @@ help:
 	@echo "  make helm-package   - Package Helm chart"
 	@echo "  make helm-install   - Install chart to Kubernetes"
 	@echo "  make helm-upgrade   - Upgrade existing installation"
+	@echo "  make helm-reinstall - Uninstall and reinstall chart"
 	@echo "  make helm-uninstall - Uninstall chart from Kubernetes"
 	@echo "  make helm-clean     - Remove packaged charts"
+	@echo ""
+	@echo "Production Deployment (Kubernetes):"
+	@echo "  make production-patch  - Bump patch, build multi-arch, deploy (x.y.Z)"
+	@echo "  make production-minor  - Bump minor, build multi-arch, deploy (x.Y.0)"
+	@echo "  make production-major  - Bump major, build multi-arch, deploy (X.0.0)"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  DOCKER_REGISTRY     - Docker registry (default: docker.io)"

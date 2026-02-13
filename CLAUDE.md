@@ -315,11 +315,28 @@ makeRequest(t, method, path, body, apiKey) → HTTP test helper
 
 All tests use `:memory:` database for isolation. No cleanup needed between test runs.
 
+### Version Management
+
+**Automatic version bumping** updates both VERSION file and Helm Chart.yaml:
+
+```bash
+make version-bump-patch   # x.y.Z → x.y.Z+1 (bug fixes)
+make version-bump-minor   # x.Y.0 → x.Y+1.0 (new features)
+make version-bump-major   # X.0.0 → X+1.0.0 (breaking changes)
+```
+
+The version bump script ([scripts/version-bump.sh](scripts/version-bump.sh)) automatically updates:
+- `VERSION` file
+- `helm/tg-monitor-bot/Chart.yaml` (both `version` and `appVersion`)
+
 ### Docker Development
 
 ```bash
 # Build
-make docker-build        # Builds with VERSION from git describe
+make docker-build        # Builds with VERSION from VERSION file
+
+# Multi-arch builds (AMD64 + ARM64)
+make docker-build-multiarch  # Build and push for both architectures
 
 # Run
 make docker-run-detached # Background with restart policy
@@ -329,6 +346,44 @@ make docker-stop         # Stop and remove
 # Deploy
 DOCKER_USERNAME=you VERSION=v1.0.0 make docker-push
 ```
+
+### Kubernetes Deployment
+
+**One-command production deployment:**
+
+```bash
+# Patch release (bug fixes)
+make production-patch
+
+# Minor release (new features)
+make production-minor
+
+# Major release (breaking changes)
+make production-major
+```
+
+Each production command performs the complete workflow:
+1. Bumps version (VERSION file + Helm Chart.yaml)
+2. Builds multi-arch Docker image (AMD64 + ARM64)
+3. Pushes to Docker registry
+4. Reinstalls Helm chart to Kubernetes
+
+**Manual deployment steps:**
+
+```bash
+# 1. Bump version
+make version-bump-patch
+
+# 2. Build and push multi-arch image
+make docker-build-multiarch
+
+# 3. Deploy to Kubernetes
+make helm-install       # First time installation
+make helm-upgrade       # Update existing deployment
+make helm-reinstall     # Clean reinstall (uninstall + install)
+```
+
+**Important:** The production deployment targets are designed for Kubernetes environments. For Docker-only deployments, use the standard Docker workflow.
 
 ### ICMP Capabilities (Critical for Ping)
 

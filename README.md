@@ -449,7 +449,118 @@ The bot uses [BoltDB](https://github.com/etcd-io/bbolt) for persistent storage w
 
 ## Deployment
 
-### Deploy to Production
+### Kubernetes (Production)
+
+The project includes Helm charts for easy Kubernetes deployment with built-in multi-architecture support (AMD64 + ARM64).
+
+#### One-Command Production Deployment
+
+```bash
+# Patch release (bug fixes) - bumps x.y.Z
+make production-patch
+
+# Minor release (new features) - bumps x.Y.0
+make production-minor
+
+# Major release (breaking changes) - bumps X.0.0
+make production-major
+```
+
+Each production command automatically:
+1. ✓ Bumps version in VERSION file and Helm Chart.yaml
+2. ✓ Builds multi-arch Docker image (AMD64 + ARM64)
+3. ✓ Pushes to Docker registry
+4. ✓ Reinstalls Helm chart to Kubernetes
+
+#### Manual Deployment Steps
+
+If you prefer step-by-step control:
+
+```bash
+# 1. Bump version
+make version-bump-patch
+
+# 2. Build multi-arch image and push
+make docker-build-multiarch
+
+# 3. Deploy to Kubernetes
+make helm-install        # First time
+# or
+make helm-upgrade        # Update existing
+```
+
+#### Version Management
+
+```bash
+make version-bump-patch  # x.y.Z (bug fixes)
+make version-bump-minor  # x.Y.0 (new features)
+make version-bump-major  # X.0.0 (breaking changes)
+```
+
+The version bump script automatically updates:
+- `VERSION` file
+- `helm/tg-monitor-bot/Chart.yaml` (version and appVersion)
+
+#### Helm Configuration
+
+Before deploying, configure your values in `helm/tg-monitor-bot/values.yaml`:
+
+```yaml
+env:
+  TELEGRAM_TOKEN: "your_bot_token_here"
+  API_KEY: "your_secure_api_key"
+  # ... other configuration
+```
+
+Or use a separate values file:
+
+```bash
+helm install tg-monitor-bot \
+  helm/tg-monitor-bot-1.0.0.tgz \
+  --namespace default \
+  --values my-values.yaml
+```
+
+#### Multi-Architecture Support
+
+The production deployment builds images for both AMD64 and ARM64:
+
+```bash
+# Build for specific architecture
+make docker-build-amd64   # AMD64 only
+make docker-build-arm64   # ARM64 only
+
+# Build for both (recommended)
+make docker-build-multiarch
+```
+
+#### Helm Commands
+
+```bash
+make helm-install      # Install chart to Kubernetes
+make helm-upgrade      # Upgrade existing installation
+make helm-reinstall    # Uninstall + install (clean slate)
+make helm-uninstall    # Remove from Kubernetes
+make helm-clean        # Remove packaged charts
+```
+
+#### Check Deployment Status
+
+```bash
+# View pod status
+kubectl get pods -n default -l app.kubernetes.io/name=tg-monitor-bot
+
+# View logs
+kubectl logs -n default -l app.kubernetes.io/name=tg-monitor-bot --tail=50
+
+# Check health
+kubectl port-forward -n default svc/tg-monitor-bot 8080:80
+curl http://localhost:8080/health
+```
+
+### Docker (Traditional)
+
+#### Deploy to Production
 
 1. **Build and push image:**
    ```bash
