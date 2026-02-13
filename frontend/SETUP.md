@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-A modern, responsive dashboard for the Telegram Monitor Bot with:
+A modern, responsive dashboard for the Outage Monitor Bot with:
 
 - **Real-time monitoring** - Auto-refreshes every 5 seconds
 - **Health status** - Visual indicators (🟢 Healthy, 🟡 Degraded, 🔴 Unhealthy)

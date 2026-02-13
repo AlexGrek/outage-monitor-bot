@@ -1,6 +1,6 @@
-# Telegram Monitor Bot
+# Outage Monitor Bot
 
-A Telegram bot for monitoring hosts via ICMP ping and HTTP/JSON endpoints, with metrics stored in BoltDB.
+An automated monitoring system for infrastructure health checking via ICMP ping and HTTP/JSON endpoints, with multi-channel notifications and metrics stored in BoltDB.
 
 ## Features
 

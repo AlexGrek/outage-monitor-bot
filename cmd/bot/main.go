@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	log.Println("🤖 Starting Telegram Outage Monitoring Bot with AppManager...")
+	log.Println("🤖 Starting Outage Monitor Bot with AppManager...")
 
 	// Initialize database
 	db, err := storage.NewBoltDB("data/state.db")

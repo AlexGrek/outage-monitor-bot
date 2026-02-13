@@ -1,0 +1,21 @@
+apiVersion: v2
+name: tg-monitor-bot
+description: A Helm chart for Telegram Outage Monitoring Bot
+type: application
+
+# Chart version - incremented with each change
+version: 1.0.3
+
+# Application version
+appVersion: "1.0.3"
+
+keywords:
+  - telegram
+  - monitoring
+  - bot
+  - infrastructure
+
+maintainers:
+  - name: TG Monitor Bot Team
+
+home: https://github.com/yourusername/tg-monitor-bot

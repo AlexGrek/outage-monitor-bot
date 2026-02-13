@@ -5,23 +5,35 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+    image: tg-monitor-bot:latest
     container_name: tg-monitor-bot
     restart: unless-stopped
+
+    # Ports
+    ports:
+      - "3000:80"      # Frontend via nginx
+      - "8080:8080"    # Backend API (also accessible via nginx at :3000/api)
 
     # Environment variables
     env_file:
       - .env
 
-    # Alternative: Use environment directly
+    # Alternative: Set environment variables directly
     # environment:
     #   - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
     #   - ALLOWED_USERS=${ALLOWED_USERS}
     #   - DB_PATH=/app/data/state.db
+    #   - API_ENABLED=true
+    #   - API_PORT=8080
+    #   - API_KEY=${API_KEY}
     #   - PING_COUNT=3
     #   - PING_TIMEOUT=5s
     #   - HTTP_TIMEOUT=10s
-    #   - CHECK_INTERVAL=1m
+    #   - DEFAULT_CHECK_INTERVAL=30s
     #   - METRICS_RETENTION=720h
+    #   - AUTO_RESTART_ENABLED=true
 
     # Persist database
     volumes:
@@ -31,14 +43,22 @@ services:
     cap_add:
       - NET_RAW
 
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
     # Optional: Resource limits
     # deploy:
     #   resources:
     #     limits:
     #       cpus: '0.5'
-    #       memory: 256M
+    #       memory: 512M
     #     reservations:
-    #       cpus: '0.25'
+    #       cpus: '0.1'
     #       memory: 128M
 
     # Logging configuration

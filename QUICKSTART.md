@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get the Telegram Monitor Bot running in **under 5 minutes**! 🚀
+Get the Outage Monitor Bot running in **under 5 minutes**! 🚀
 
 ## Prerequisites
 

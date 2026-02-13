@@ -157,7 +157,7 @@ function App() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <h1 className="text-2xl font-bold text-gray-900">
-                Telegram Monitor Bot
+                Outage Monitor Bot
               </h1>
               <HealthBadge health={health} isLoading={loading} />
             </div>

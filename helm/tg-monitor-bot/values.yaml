@@ -1,0 +1,143 @@
+# Default values for tg-monitor-bot
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of replicas (StatefulSet - should be 1 for single DB)
+replicaCount: 1
+
+image:
+  repository: docker.io/grekodocker/outage-monitor-bot
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  capabilities:
+    add:
+      - NET_RAW  # Required for ICMP ping
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+  # API port
+  apiPort: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: monitor.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: monitor-tls
+  #    hosts:
+  #      - monitor.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Persistence for BoltDB
+persistence:
+  enabled: true
+  # storageClass: ""  # Use default storage class
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  # existingClaim: ""  # Use existing PVC
+
+# Environment variables - configure your bot
+env:
+  # Telegram configuration
+  TELEGRAM_TOKEN: "your_bot_token_here"
+  ALLOWED_USERS: ""
+
+  # Database path (should match persistence mountPath)
+  DB_PATH: "/app/data/state.db"
+
+  # Monitoring configuration
+  PING_COUNT: "3"
+  PING_TIMEOUT: "5s"
+  HTTP_TIMEOUT: "10s"
+  DEFAULT_CHECK_INTERVAL: "30s"
+  METRICS_RETENTION: "720h"
+
+  # API configuration
+  API_ENABLED: "true"
+  API_PORT: "8080"
+  API_KEY: "change-me-to-secure-api-key"
+
+  # Auto-restart configuration
+  AUTO_RESTART_ENABLED: "true"
+  AUTO_RESTART_DELAY: "30s"
+  AUTO_RESTART_MAX_ATTEMPTS: "0"
+  AUTO_RESTART_BACKOFF_MULTIPLIER: "2.0"
+  AUTO_RESTART_MAX_DELAY: "5m"
+
+# Use secrets for sensitive data (recommended for production)
+secrets:
+  create: false
+  # If create: true, these values will be used to create a Secret
+  # TELEGRAM_TOKEN: ""
+  # API_KEY: ""
+
+# Existing secret name to use instead of creating one
+existingSecret: ""
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Update strategy for StatefulSet
+updateStrategy:
+  type: RollingUpdate
+
+# Liveness and readiness probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 80
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 80
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3

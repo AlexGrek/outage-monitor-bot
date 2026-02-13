@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Telegram Outage Monitoring Bot** - An automated monitoring system that continuously checks infrastructure (via ICMP ping or HTTP), detects status changes, and sends instant notifications to multiple Telegram chats when outages occur or services are restored.
+**Outage Monitor Bot** - An automated monitoring system that continuously checks infrastructure (via ICMP ping or HTTP), detects status changes, and sends instant notifications to multiple sinks (Telegram chats, webhooks, etc.) when outages occur or services are restored.
 
 **Key characteristics:**
 - Binary status monitoring (1=online, 0=offline)
 - Continuous goroutine-based checking (one per source)
 - Immediate persistence to BoltDB (survives restarts)
 - Duration tracking for uptime/downtime
-- Multi-chat notifications per source
+- Multi-sink notifications per source (Telegram, and more to come)
 
 ## Architecture
 

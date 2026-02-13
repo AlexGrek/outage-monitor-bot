@@ -1,6 +1,6 @@
-# Telegram Monitor Bot - Dashboard
+# Outage Monitor Bot - Dashboard
 
-A modern, responsive web dashboard for managing and monitoring the Telegram Monitor Bot.
+A modern, responsive web dashboard for managing and monitoring the Outage Monitor Bot.
 
 ## Features
 
