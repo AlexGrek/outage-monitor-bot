@@ -98,7 +98,11 @@ cleanup() {
 # Set trap for cleanup on Ctrl+C
 trap cleanup SIGINT SIGTERM
 
-# Ensure air (Go live-reload) is installed
+# Ensure air (Go live-reload) is installed and on PATH
+# go install puts binaries in GOPATH/bin or GOBIN, which may not be in PATH
+GOBIN=$(go env GOBIN 2>/dev/null)
+GOPATH=$(go env GOPATH 2>/dev/null)
+export PATH="${GOBIN:-$GOPATH/bin}:$PATH"
 if ! command -v air &>/dev/null; then
     echo -e "${BLUE}Installing air (Go live-reload tool)...${NC}"
     go install github.com/air-verse/air@latest
