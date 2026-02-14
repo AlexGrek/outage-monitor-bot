@@ -9,6 +9,7 @@ import { SourcesPanel } from './components/dashboard/SourcesPanel'
 import { TabNavigation, type TabId } from './components/dashboard/TabNavigation'
 import { SinksPanel } from './components/dashboard/SinksPanel'
 import { EventsPanel } from './components/dashboard/EventsPanel'
+import { ToastContainer, type ToastMessage } from './components/dashboard/Toast'
 import type {
   HealthResponse,
   StatusResponse,
@@ -28,6 +29,16 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloading, setReloading] = useState(false)
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
+
+  const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
+    const id = `${Date.now()}-${Math.random()}`
+    setToasts((prev) => [...prev, { ...toast, id }])
+  }, [])
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
 
   const loadData = useCallback(async () => {
     try {
@@ -154,6 +165,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <ApiKeyModal isOpen={showApiKeyModal} onClose={handleApiKeySubmit} />
+      <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -353,7 +365,7 @@ function App() {
         )}
 
         {/* Sinks Tab */}
-        {activeTab === 'sinks' && <SinksPanel />}
+        {activeTab === 'sinks' && <SinksPanel onToast={addToast} />}
 
         {/* Events Tab */}
         {activeTab === 'events' && <EventsPanel sources={sources} />}

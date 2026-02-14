@@ -16,6 +16,7 @@ bin/
 data/state.db
 data/*.db
 *.db
+:memory:
 
 # Environment files
 .env
@@ -36,6 +37,9 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Air live-reload
+tmp/
 
 # Helm packages
 *.tgz

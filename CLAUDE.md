@@ -313,7 +313,7 @@ setupTestAppManager(t) → creates in-memory BoltDB + AppManager
 makeRequest(t, method, path, body, apiKey) → HTTP test helper
 ```
 
-All tests use `:memory:` database for isolation. No cleanup needed between test runs.
+All tests use a temporary database file (via `t.TempDir()`) for isolation. The temp dir is auto-cleaned after each test. No manual cleanup needed.
 
 ### Version Management
 

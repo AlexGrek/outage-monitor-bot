@@ -35,13 +35,18 @@ export default {
         },
         success: {
           50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
           500: '#22c55e',
           600: '#16a34a',
+          700: '#15803d',
         },
         error: {
           50: '#fef2f2',
+          200: '#fecaca',
           500: '#ef4444',
           600: '#dc2626',
+          700: '#b91c1c',
         },
         warning: {
           50: '#fffbeb',
@@ -51,6 +56,15 @@ export default {
       },
       fontFamily: {
         sans: ['Inter var', 'system-ui', 'sans-serif'],
+      },
+      keyframes: {
+        'slide-in': {
+          '0%': { transform: 'translateX(100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+      },
+      animation: {
+        'slide-in': 'slide-in 0.3s ease-out',
       },
     },
   },

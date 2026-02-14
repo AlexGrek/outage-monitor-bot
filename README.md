@@ -394,7 +394,7 @@ go tool cover -html=coverage.out        # View coverage in browser
 - Bot reload endpoint
 
 **Test architecture:**
-- In-memory BoltDB (`:memory:`) for isolation
+- Temporary file BoltDB per test (via t.TempDir()) for isolation and cleanup
 - `net/http/httptest` for HTTP testing
 - No cleanup needed between test runs
 - All tests independent and parallelizable

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,17 +16,18 @@ import (
 	"tg-monitor-bot/internal/storage"
 )
 
-// setupTestAppManager creates a test AppManager with in-memory database
+// setupTestAppManager creates a test AppManager with a temporary database file.
+// BoltDB is file-based and has no in-memory mode; using t.TempDir() gives isolation and auto-cleanup.
 func setupTestAppManager(t *testing.T) (*AppManager, *storage.BoltDB, func()) {
-	// Create temporary database
-	db, err := storage.NewBoltDB(":memory:")
+	dbPath := filepath.Join(t.TempDir(), "test.db")
+	db, err := storage.NewBoltDB(dbPath)
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}
 
 	cfg := &config.Config{
 		TelegramToken:        "test-token",
-		DBPath:               ":memory:",
+		DBPath:               dbPath,
 		APIEnabled:           true,
 		APIPort:              8080,
 		APIKey:               "test-api-key",

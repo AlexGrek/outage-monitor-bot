@@ -98,69 +98,62 @@ cleanup() {
 # Set trap for cleanup on Ctrl+C
 trap cleanup SIGINT SIGTERM
 
+# Ensure air (Go live-reload) is installed
+if ! command -v air &>/dev/null; then
+    echo -e "${BLUE}Installing air (Go live-reload tool)...${NC}"
+    go install github.com/air-verse/air@latest
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}x air install failed${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}OK air installed${NC}"
+fi
+
 # Kill any existing processes
 echo -e "${YELLOW}Checking for existing processes...${NC}"
 
-# Kill backend processes
+# Kill air and backend processes
+EXISTING_AIR=$(pgrep -f "air" || true)
 EXISTING_BACKEND=$(pgrep -f "bin/tg-monitor-bot" || true)
-if [ ! -z "$EXISTING_BACKEND" ]; then
-    echo -e "${YELLOW}⚠ Found existing backend processes (PIDs: $EXISTING_BACKEND)${NC}"
-    pkill -f "bin/tg-monitor-bot" || true
+if [ ! -z "$EXISTING_AIR" ] || [ ! -z "$EXISTING_BACKEND" ]; then
+    echo -e "${YELLOW}Found existing backend/air processes, stopping...${NC}"
+    pkill -f "air" 2>/dev/null || true
+    pkill -f "bin/tg-monitor-bot" 2>/dev/null || true
 fi
 
 # Kill orphaned tail processes
 EXISTING_TAIL=$(pgrep -f "tail -f logs/backend.log" || true)
 if [ ! -z "$EXISTING_TAIL" ]; then
-    echo -e "${YELLOW}⚠ Found orphaned tail processes (PIDs: $EXISTING_TAIL)${NC}"
-    pkill -f "tail -f logs/backend.log" || true
+    pkill -f "tail -f logs/backend.log" 2>/dev/null || true
 fi
 
-if [ -z "$EXISTING_BACKEND" ] && [ -z "$EXISTING_TAIL" ]; then
-    echo -e "${GREEN}✓ No existing processes found${NC}"
+if [ -z "$EXISTING_AIR" ] && [ -z "$EXISTING_BACKEND" ] && [ -z "$EXISTING_TAIL" ]; then
+    echo -e "${GREEN}OK No existing processes found${NC}"
 else
     sleep 1
-    echo -e "${GREEN}✓ Existing processes stopped${NC}"
+    echo -e "${GREEN}OK Existing processes stopped${NC}"
 fi
 echo ""
 
-# Create data directory if it doesn't exist
-mkdir -p data
+# Create data and logs directories
+mkdir -p data logs
 
-# Build backend
-echo -e "${BLUE}Building backend...${NC}"
-make build > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo -e "${RED}✗ Backend build failed${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✓ Backend built${NC}"
-
-# Set capabilities for ICMP if needed
-if ! getcap bin/tg-monitor-bot | grep -q cap_net_raw; then
-    echo -e "${YELLOW}⚠ Setting ICMP capabilities (requires sudo)...${NC}"
-    sudo make setcap > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ ICMP capabilities set${NC}"
-    else
-        echo -e "${YELLOW}  Warning: Could not set ICMP capabilities. Ping checks may fail.${NC}"
-    fi
-fi
-
-# Start backend
-echo -e "${BLUE}Starting backend on port $API_PORT...${NC}"
-./bin/tg-monitor-bot > logs/backend.log 2>&1 &
+# Start backend with air (live-reload on .go file changes)
+echo -e "${BLUE}Starting backend with air (live-reload) on port ${API_PORT:-8080}...${NC}"
+air -c .air.toml >> logs/backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to start
-sleep 2
+sleep 3
 
-# Check if backend is running
+# Check if air is running
 if ! kill -0 $BACKEND_PID 2>/dev/null; then
-    echo -e "${RED}✗ Backend failed to start${NC}"
+    echo -e "${RED}x Backend (air) failed to start${NC}"
     echo -e "${YELLOW}  Check logs/backend.log for details${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Backend started (PID: $BACKEND_PID)${NC}"
+echo -e "${GREEN}OK Backend started with live-reload (PID: $BACKEND_PID)${NC}"
+echo -e "${BLUE}  Edit any .go file to rebuild and restart automatically.${NC}"
 
 # Install frontend dependencies if needed
 if [ ! -d "frontend/node_modules" ]; then

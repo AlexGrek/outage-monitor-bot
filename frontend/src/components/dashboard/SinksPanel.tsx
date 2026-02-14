@@ -1,8 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import { api } from '../../lib/api'
 import type { Webhook, CreateWebhookRequest, TelegramChat } from '../../types'
+import type { ToastMessage } from './Toast'
 
-export function SinksPanel() {
+interface SinksPanelProps {
+  onToast: (toast: Omit<ToastMessage, 'id'>) => void
+}
+
+export function SinksPanel({ onToast }: SinksPanelProps) {
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
   const [telegramChats, setTelegramChats] = useState<TelegramChat[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -103,9 +108,19 @@ export function SinksPanel() {
     try {
       setError(null)
       await api.testTelegramChat(chatId)
-      alert(`Test notification sent to chat ${chatId}`)
+      onToast({
+        type: 'success',
+        title: 'Test notification sent!',
+        message: `Test message successfully sent to Telegram chat ${chatId}`,
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send test notification')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send test notification'
+      setError(errorMessage)
+      onToast({
+        type: 'error',
+        title: 'Test notification failed',
+        message: errorMessage,
+      })
     }
   }
 
@@ -113,9 +128,19 @@ export function SinksPanel() {
     try {
       setError(null)
       await api.testWebhook(webhookId)
-      alert(`Test notification sent to webhook: ${url}`)
+      onToast({
+        type: 'success',
+        title: 'Test webhook sent!',
+        message: `Test payload successfully sent to ${url}`,
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send test notification')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send test notification'
+      setError(errorMessage)
+      onToast({
+        type: 'error',
+        title: 'Test webhook failed',
+        message: errorMessage,
+      })
     }
   }
 
