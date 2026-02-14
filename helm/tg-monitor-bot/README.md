@@ -132,6 +132,18 @@ make helm-upgrade
 helm upgrade tg-monitor-bot helm/tg-monitor-bot
 ```
 
+**StatefulSet upgrade limitations**: Kubernetes forbids changing certain StatefulSet spec fields after creation (serviceName, selector, volumeClaimTemplates). If you get "cannot patch ... spec: Forbidden: updates to statefulset spec for fields other than ...", you changed one of these:
+
+- **persistence**: Do not change `persistence.enabled`, `persistence.size`, `persistence.accessMode`, or `persistence.storageClass` after first install.
+- **Release/name**: Do not change release name, `nameOverride`, or `fullnameOverride` in a way that changes the StatefulSet's serviceName or selector.
+
+To fix: delete the StatefulSet only (keep PVCs to preserve data), then run `helm upgrade` again so Helm recreates the StatefulSet with the same spec. Example:
+
+```bash
+kubectl delete statefulset tg-monitor-bot --cascade=orphan   # keep pods and PVCs
+helm upgrade tg-monitor-bot helm/tg-monitor-bot
+```
+
 ### Uninstall
 
 ```bash

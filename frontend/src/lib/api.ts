@@ -175,10 +175,10 @@ class ApiClient {
     return this.request<TelegramChat[]>('/telegram-chats')
   }
 
-  async addTelegramChat(chatId: number): Promise<TelegramChat> {
+  async addTelegramChat(chatId: number, name?: string): Promise<TelegramChat> {
     return this.request<TelegramChat>('/telegram-chats', {
       method: 'POST',
-      body: JSON.stringify({ chat_id: chatId }),
+      body: JSON.stringify({ chat_id: chatId, name: name ?? '' }),
     })
   }
 
@@ -230,6 +230,10 @@ class ApiClient {
   }
 
   // Source-TelegramChat associations (require auth)
+  async getSourceTelegramChats(sourceId: string): Promise<TelegramChat[]> {
+    return this.request<TelegramChat[]>(`/sources/${sourceId}/telegram-chats`)
+  }
+
   async addSourceTelegramChat(
     sourceId: string,
     chatId: number

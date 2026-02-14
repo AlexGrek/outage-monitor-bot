@@ -70,6 +70,10 @@ resources:
     memory: 32Mi   # 1.4x actual usage (efficient scheduling)
 
 # Persistence for BoltDB
+# WARNING: StatefulSet immutable fields - do NOT change after first install:
+# - enabled (adding/removing volumeClaimTemplates is forbidden)
+# - size, accessMode, storageClass (volumeClaimTemplates content is immutable)
+# To change persistence you must delete the StatefulSet (keep PVCs if needed) and re-install.
 persistence:
   enabled: true
   # storageClass: ""  # Use default storage class

@@ -15,6 +15,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
   // Webhook management
   const [showWebhookForm, setShowWebhookForm] = useState(false)
   const [webhookForm, setWebhookForm] = useState<CreateWebhookRequest>({
+    name: '',
     url: '',
     method: 'POST',
     enabled: true,
@@ -24,6 +25,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
   // Telegram management
   const [showChatForm, setShowChatForm] = useState(false)
   const [chatIdInput, setChatIdInput] = useState('')
+  const [chatNameInput, setChatNameInput] = useState('')
   const [submittingChat, setSubmittingChat] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -52,7 +54,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
       setSubmittingWebhook(true)
       setError(null)
       await api.createWebhook(webhookForm)
-      setWebhookForm({ url: '', method: 'POST', enabled: true })
+      setWebhookForm({ name: '', url: '', method: 'POST', enabled: true })
       setShowWebhookForm(false)
       await loadData()
     } catch (err) {
@@ -82,8 +84,9 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
       if (isNaN(chatId)) {
         throw new Error('Invalid chat ID')
       }
-      await api.addTelegramChat(chatId)
+      await api.addTelegramChat(chatId, chatNameInput.trim() || undefined)
       setChatIdInput('')
+      setChatNameInput('')
       setShowChatForm(false)
       await loadData()
     } catch (err) {
@@ -93,8 +96,9 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
     }
   }
 
-  const handleRemoveChat = async (chatId: number) => {
-    if (!window.confirm(`Remove chat ${chatId}?`)) return
+  const handleRemoveChat = async (chatId: number, name?: string) => {
+    const label = name ? `"${name}"` : String(chatId)
+    if (!window.confirm(`Remove chat ${label}?`)) return
     try {
       setError(null)
       await api.removeTelegramChat(chatId)
@@ -184,6 +188,18 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={chatNameInput}
+                  onChange={(e) => setChatNameInput(e.target.value)}
+                  placeholder="e.g. Team Alerts"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Chat ID
                 </label>
                 <input
@@ -225,9 +241,14 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Chat {chat.chat_id}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {chat.name ? chat.name : `Chat ${chat.chat_id}`}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    Added {new Date(chat.created_at).toLocaleDateString()}
+                    ID: {chat.chat_id}
+                    {chat.created_at
+                      ? ` · Added ${new Date(chat.created_at).toLocaleDateString()}`
+                      : ''}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -238,7 +259,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                     Test
                   </button>
                   <button
-                    onClick={() => handleRemoveChat(chat.chat_id)}
+                    onClick={() => handleRemoveChat(chat.chat_id, chat.name)}
                     className="px-3 py-1 text-sm text-error-600 hover:text-error-700 font-medium"
                   >
                     Remove
@@ -272,6 +293,20 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
         {showWebhookForm && (
           <form onSubmit={handleCreateWebhook} className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={webhookForm.name ?? ''}
+                  onChange={(e) =>
+                    setWebhookForm({ ...webhookForm, name: e.target.value })
+                  }
+                  placeholder="e.g. Slack Alerts"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   URL
@@ -380,7 +415,9 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">{webhook.url}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {webhook.name ? webhook.name : webhook.url}
+                    </p>
                     <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
                       {webhook.method}
                     </span>
@@ -395,6 +432,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
+                    {webhook.name && webhook.url ? `${webhook.url} · ` : ''}
                     Created {new Date(webhook.created_at).toLocaleDateString()}
                     {webhook.last_triggered &&
                       ` • Last triggered ${new Date(webhook.last_triggered).toLocaleTimeString()}`}

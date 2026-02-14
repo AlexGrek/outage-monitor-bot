@@ -33,24 +33,26 @@ export function SourceSinksModal({
     setLoading(true)
     setError(null)
     try {
-      const [hooks, chats, sourceHooks] = await Promise.all([
+      const [hooks, chats, sourceHooks, sourceChats] = await Promise.all([
         api.getWebhooks(),
         api.getTelegramChats(),
         api.getSourceWebhooks(source.id),
+        api.getSourceTelegramChats(source.id),
       ])
       setWebhooks(hooks || [])
       setTelegramChats(chats || [])
 
-      // Set currently selected webhooks
       const selectedHooks = new Set<string>()
       if (sourceHooks) {
         sourceHooks.forEach((hook) => selectedHooks.add(hook.id))
       }
       setSelectedWebhookIds(selectedHooks)
 
-      // TODO: Load current telegram chat associations
-      // For now, start with empty selections
-      setSelectedChatIds(new Set())
+      const selectedChats = new Set<number>()
+      if (sourceChats) {
+        sourceChats.forEach((chat) => selectedChats.add(chat.chat_id))
+      }
+      setSelectedChatIds(selectedChats)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load sinks')
     } finally {
@@ -151,9 +153,12 @@ export function SourceSinksModal({
                           className="w-4 h-4 text-primary-600 rounded"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 truncate">{webhook.url}</p>
+                          <p className="text-sm text-gray-900 truncate">
+                            {webhook.name ? webhook.name : webhook.url}
+                          </p>
                           <p className="text-xs text-gray-500">
-                            {webhook.method} {webhook.enabled ? '✓' : '(disabled)'}
+                            {webhook.name && webhook.url ? `${webhook.url} · ` : ''}
+                            {webhook.method} {webhook.enabled ? 'OK' : '(disabled)'}
                           </p>
                         </div>
                       </label>
@@ -180,9 +185,14 @@ export function SourceSinksModal({
                           className="w-4 h-4 text-primary-600 rounded"
                         />
                         <div className="flex-1">
-                          <p className="text-sm text-gray-900">Chat ID: {chat.chat_id}</p>
+                          <p className="text-sm text-gray-900">
+                            {chat.name ? chat.name : `Chat ${chat.chat_id}`}
+                          </p>
                           <p className="text-xs text-gray-500">
-                            Added {new Date(chat.created_at).toLocaleDateString()}
+                            ID: {chat.chat_id}
+                            {chat.created_at
+                              ? ` · Added ${new Date(chat.created_at).toLocaleDateString()}`
+                              : ''}
                           </p>
                         </div>
                       </label>

@@ -28,6 +28,7 @@ func (am *AppManager) handleGetWebhooks(c echo.Context) error {
 // handleCreateWebhook creates a new webhook
 func (am *AppManager) handleCreateWebhook(c echo.Context) error {
 	var req struct {
+		Name    string            `json:"name"`
 		URL     string            `json:"url"`
 		Method  string            `json:"method"`
 		Headers map[string]string `json:"headers,omitempty"`
@@ -59,6 +60,7 @@ func (am *AppManager) handleCreateWebhook(c echo.Context) error {
 	}
 
 	webhook := &storage.Webhook{
+		Name:    req.Name,
 		URL:     req.URL,
 		Method:  req.Method,
 		Headers: req.Headers,
@@ -87,6 +89,7 @@ func (am *AppManager) handleUpdateWebhook(c echo.Context) error {
 	}
 
 	var req struct {
+		Name    *string            `json:"name"`
 		URL     *string            `json:"url"`
 		Method  *string            `json:"method"`
 		Headers map[string]string  `json:"headers,omitempty"`
@@ -97,6 +100,10 @@ func (am *AppManager) handleUpdateWebhook(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid request body",
 		})
+	}
+
+	if req.Name != nil {
+		webhook.Name = *req.Name
 	}
 
 	if req.URL != nil {

@@ -115,6 +115,7 @@ export interface UpdateSourceRequest {
 
 export interface Webhook {
   id: string
+  name: string
   url: string
   method: 'GET' | 'POST' | 'PUT'
   headers?: Record<string, string>
@@ -125,6 +126,7 @@ export interface Webhook {
 }
 
 export interface CreateWebhookRequest {
+  name?: string
   url: string
   method: 'GET' | 'POST' | 'PUT'
   headers?: Record<string, string>
@@ -132,6 +134,7 @@ export interface CreateWebhookRequest {
 }
 
 export interface UpdateWebhookRequest {
+  name?: string
   url?: string
   method?: 'GET' | 'POST' | 'PUT'
   headers?: Record<string, string>
@@ -140,6 +143,7 @@ export interface UpdateWebhookRequest {
 
 export interface TelegramChat {
   chat_id: number
+  name: string
   created_at: string
 }
 

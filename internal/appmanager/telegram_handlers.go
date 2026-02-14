@@ -12,24 +12,26 @@ import (
 	"tg-monitor-bot/internal/storage"
 )
 
-// handleGetTelegramChats returns all configured telegram chats
-// Currently uses source_chats association through sources
+// handleGetTelegramChats returns all configured telegram chats from the registry
 func (am *AppManager) handleGetTelegramChats(c echo.Context) error {
-	// For MVP, return empty list since telegram chats are managed through source creation
-	// Full implementation would maintain separate chat registry
-	type ChatResponse struct {
-		ChatID    int64  `json:"chat_id"`
-		CreatedAt string `json:"created_at"`
+	chats, err := am.storage.ListChats()
+	if err != nil {
+		am.logger.Printf("Failed to list chats: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to list telegram chats",
+		})
 	}
-
-	return c.JSON(http.StatusOK, []ChatResponse{})
+	if chats == nil {
+		chats = []*storage.Chat{}
+	}
+	return c.JSON(http.StatusOK, chats)
 }
 
-// handleAddTelegramChat adds a telegram chat
-// Currently managed through /add_source Telegram command or UI
+// handleAddTelegramChat adds a named telegram chat to the registry
 func (am *AppManager) handleAddTelegramChat(c echo.Context) error {
 	var req struct {
-		ChatID int64 `json:"chat_id"`
+		ChatID int64  `json:"chat_id"`
+		Name   string `json:"name"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -44,19 +46,122 @@ func (am *AppManager) handleAddTelegramChat(c echo.Context) error {
 		})
 	}
 
-	// For MVP, return success but don't actually store
-	// Full implementation would maintain separate chat registry
-	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"chat_id": req.ChatID,
+	chat := &storage.Chat{
+		ChatID: req.ChatID,
+		Name:   req.Name,
+	}
+	if err := am.storage.SaveChat(chat); err != nil {
+		am.logger.Printf("Failed to save chat: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to add telegram chat",
+		})
+	}
+	return c.JSON(http.StatusCreated, chat)
+}
+
+// handleRemoveTelegramChat removes a telegram chat from the registry and all source associations
+func (am *AppManager) handleRemoveTelegramChat(c echo.Context) error {
+	chatIDStr := c.Param("chat_id")
+	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid chat ID",
+		})
+	}
+	if err := am.storage.DeleteChat(chatID); err != nil {
+		am.logger.Printf("Failed to delete chat: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to remove telegram chat",
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Chat removed",
 	})
 }
 
-// handleRemoveTelegramChat removes a telegram chat
-func (am *AppManager) handleRemoveTelegramChat(c echo.Context) error {
-	// For MVP, just return success
-	// Full implementation would remove from chat registry
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Chat removed",
+// handleGetSourceTelegramChats returns telegram chats associated with a source (with names from registry)
+func (am *AppManager) handleGetSourceTelegramChats(c echo.Context) error {
+	sourceID := c.Param("source_id")
+	if _, err := am.storage.GetSource(sourceID); err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "Source not found",
+		})
+	}
+	chatIDs, err := am.storage.GetSourceChats(sourceID)
+	if err != nil {
+		am.logger.Printf("Failed to get source chats: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get source telegram chats",
+		})
+	}
+	var chats []*storage.Chat
+	for _, id := range chatIDs {
+		chat, err := am.storage.GetChat(id)
+		if err != nil {
+			chats = append(chats, &storage.Chat{ChatID: id, Name: ""})
+			continue
+		}
+		chats = append(chats, chat)
+	}
+	if chats == nil {
+		chats = []*storage.Chat{}
+	}
+	return c.JSON(http.StatusOK, chats)
+}
+
+// handleAddSourceTelegramChat associates a telegram chat with a source
+func (am *AppManager) handleAddSourceTelegramChat(c echo.Context) error {
+	sourceID := c.Param("source_id")
+	chatIDStr := c.Param("chat_id")
+	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid chat ID",
+		})
+	}
+	if _, err := am.storage.GetSource(sourceID); err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "Source not found",
+		})
+	}
+	if _, err := am.storage.GetChat(chatID); err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "Telegram chat not found. Add the chat in Sinks first.",
+		})
+	}
+	if err := am.storage.AddSourceChat(sourceID, chatID); err != nil {
+		am.logger.Printf("Failed to add source chat: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to add telegram chat to source",
+		})
+	}
+	return c.JSON(http.StatusCreated, map[string]interface{}{
+		"message":   "Telegram chat added to source",
+		"source_id":  sourceID,
+		"chat_id":   chatID,
+	})
+}
+
+// handleRemoveSourceTelegramChat removes a telegram chat from a source
+func (am *AppManager) handleRemoveSourceTelegramChat(c echo.Context) error {
+	sourceID := c.Param("source_id")
+	chatIDStr := c.Param("chat_id")
+	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid chat ID",
+		})
+	}
+	if err := am.storage.RemoveSourceChat(sourceID, chatID); err != nil {
+		am.logger.Printf("Failed to remove source chat: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to remove telegram chat from source",
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message":   "Telegram chat removed from source",
+		"source_id":  sourceID,
+		"chat_id":   chatID,
 	})
 }
 

@@ -12,6 +12,7 @@ import (
 // Webhook represents an HTTP webhook for notifications
 type Webhook struct {
 	ID            string            `msgpack:"id" json:"id"`
+	Name          string            `msgpack:"name" json:"name"`
 	URL           string            `msgpack:"url" json:"url"`
 	Method        string            `msgpack:"method" json:"method"` // GET, POST, PUT
 	Headers       map[string]string `msgpack:"headers" json:"headers,omitempty"`
@@ -48,7 +49,11 @@ func (b *BoltDB) SaveWebhook(webhook *Webhook) error {
 			return fmt.Errorf("failed to save webhook: %w", err)
 		}
 
-		b.logger.Printf("Saved webhook: %s (%s)", webhook.URL, webhook.Method)
+		if webhook.Name != "" {
+			b.logger.Printf("Saved webhook: %s (%s)", webhook.Name, webhook.Method)
+		} else {
+			b.logger.Printf("Saved webhook: %s (%s)", webhook.URL, webhook.Method)
+		}
 		return nil
 	})
 }

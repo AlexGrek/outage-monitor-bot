@@ -12,6 +12,7 @@ const (
 	// Bucket names
 	sourcesBucket        = "sources"
 	sourceChatsBucket    = "source_chats"
+	chatsBucket          = "chats" // registry of telegram chats (chat_id -> name, etc.)
 	statusChangesBucket  = "status_changes"
 	configBucket         = "config"
 	webhooksBucket       = "webhooks"
@@ -55,6 +56,7 @@ func (b *BoltDB) initBuckets() error {
 		buckets := []string{
 			sourcesBucket,
 			sourceChatsBucket,
+			chatsBucket,
 			statusChangesBucket,
 			configBucket,
 			webhooksBucket,
