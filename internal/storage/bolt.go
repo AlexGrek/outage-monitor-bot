@@ -10,10 +10,12 @@ import (
 
 const (
 	// Bucket names
-	sourcesBucket       = "sources"
-	sourceChatsBucket   = "source_chats"
-	statusChangesBucket = "status_changes"
-	configBucket        = "config"
+	sourcesBucket        = "sources"
+	sourceChatsBucket    = "source_chats"
+	statusChangesBucket  = "status_changes"
+	configBucket         = "config"
+	webhooksBucket       = "webhooks"
+	sourceWebhooksBucket = "source_webhooks"
 )
 
 // BoltDB wraps the bbolt database
@@ -50,7 +52,14 @@ func NewBoltDB(path string) (*BoltDB, error) {
 // initBuckets creates required buckets if they don't exist
 func (b *BoltDB) initBuckets() error {
 	return b.db.Update(func(tx *bolt.Tx) error {
-		buckets := []string{sourcesBucket, sourceChatsBucket, statusChangesBucket, configBucket}
+		buckets := []string{
+			sourcesBucket,
+			sourceChatsBucket,
+			statusChangesBucket,
+			configBucket,
+			webhooksBucket,
+			sourceWebhooksBucket,
+		}
 
 		for _, bucket := range buckets {
 			_, err := tx.CreateBucketIfNotExists([]byte(bucket))

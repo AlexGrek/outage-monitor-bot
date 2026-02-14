@@ -112,3 +112,49 @@ export interface UpdateSourceRequest {
   check_interval: string
   enabled: boolean
 }
+
+export interface Webhook {
+  id: string
+  url: string
+  method: 'GET' | 'POST' | 'PUT'
+  headers?: Record<string, string>
+  enabled: boolean
+  created_at: string
+  updated_at?: string
+  last_triggered?: string
+}
+
+export interface CreateWebhookRequest {
+  url: string
+  method: 'GET' | 'POST' | 'PUT'
+  headers?: Record<string, string>
+  enabled: boolean
+}
+
+export interface UpdateWebhookRequest {
+  url?: string
+  method?: 'GET' | 'POST' | 'PUT'
+  headers?: Record<string, string>
+  enabled?: boolean
+}
+
+export interface TelegramChat {
+  chat_id: number
+  created_at: string
+}
+
+export interface StatusChangeEvent {
+  id: string
+  source_id: string
+  source_name: string
+  old_status: number // 0 = offline, 1 = online
+  new_status: number
+  duration_ms: number // Duration in previous state
+  timestamp: string // ISO datetime
+}
+
+export interface SinkAssociation {
+  source_id: string
+  sink_id: string
+  sink_type: 'telegram' | 'webhook'
+}

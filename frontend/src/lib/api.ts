@@ -9,6 +9,11 @@ import type {
   Source,
   CreateSourceRequest,
   UpdateSourceRequest,
+  Webhook,
+  CreateWebhookRequest,
+  UpdateWebhookRequest,
+  TelegramChat,
+  StatusChangeEvent,
 } from '../types'
 
 const API_BASE = '/api'
@@ -138,6 +143,65 @@ class ApiClient {
       `/sources/${id}/resume`,
       { method: 'POST' }
     )
+  }
+
+  // Webhook endpoints (require auth)
+  async getWebhooks(): Promise<Webhook[]> {
+    return this.request<Webhook[]>('/webhooks')
+  }
+
+  async createWebhook(data: CreateWebhookRequest): Promise<Webhook> {
+    return this.request<Webhook>('/webhooks', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateWebhook(id: string, data: UpdateWebhookRequest): Promise<Webhook> {
+    return this.request<Webhook>(`/webhooks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteWebhook(id: string): Promise<{ message: string; id: string }> {
+    return this.request<{ message: string; id: string }>(`/webhooks/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Telegram chat endpoints (require auth)
+  async getTelegramChats(): Promise<TelegramChat[]> {
+    return this.request<TelegramChat[]>('/telegram-chats')
+  }
+
+  async addTelegramChat(chatId: number): Promise<TelegramChat> {
+    return this.request<TelegramChat>('/telegram-chats', {
+      method: 'POST',
+      body: JSON.stringify({ chat_id: chatId }),
+    })
+  }
+
+  async removeTelegramChat(chatId: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/telegram-chats/${chatId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Status change events endpoint (require auth)
+  async getStatusChangeEvents(filters?: {
+    source_id?: string
+    limit?: number
+    offset?: number
+  }): Promise<StatusChangeEvent[]> {
+    const params = new URLSearchParams()
+    if (filters?.source_id) params.append('source_id', filters.source_id)
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+    if (filters?.offset) params.append('offset', filters.offset.toString())
+
+    const query = params.toString()
+    const endpoint = query ? `/events?${query}` : '/events'
+    return this.request<StatusChangeEvent[]>(endpoint)
   }
 }
 

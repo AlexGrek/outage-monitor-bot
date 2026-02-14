@@ -15,7 +15,8 @@
       "Bash(kubectl logs:*)",
       "Bash(git -C /Users/vedmedik/dev/tg-monitor-bot ls-files)",
       "Bash(ls:*)",
-      "Bash(kubectl exec:*)"
+      "Bash(kubectl exec:*)",
+      "Bash(go build:*)"
     ]
   }
 }

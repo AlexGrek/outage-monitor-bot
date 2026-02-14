@@ -29,6 +29,22 @@ func (am *AppManager) setupRoutes() {
 	am.echoServer.DELETE("/sources/:id", am.handleDeleteSource)
 	am.echoServer.POST("/sources/:id/pause", am.handlePauseSource)
 	am.echoServer.POST("/sources/:id/resume", am.handleResumeSource)
+
+	// Webhook endpoints
+	am.echoServer.GET("/webhooks", am.handleGetWebhooks)
+	am.echoServer.POST("/webhooks", am.handleCreateWebhook)
+	am.echoServer.PUT("/webhooks/:id", am.handleUpdateWebhook)
+	am.echoServer.DELETE("/webhooks/:id", am.handleDeleteWebhook)
+	am.echoServer.POST("/sources/:source_id/webhooks/:webhook_id", am.handleAddSourceWebhook)
+	am.echoServer.DELETE("/sources/:source_id/webhooks/:webhook_id", am.handleRemoveSourceWebhook)
+
+	// Events endpoints
+	am.echoServer.GET("/events", am.handleGetEvents)
+
+	// Telegram chat endpoints
+	am.echoServer.GET("/telegram-chats", am.handleGetTelegramChats)
+	am.echoServer.POST("/telegram-chats", am.handleAddTelegramChat)
+	am.echoServer.DELETE("/telegram-chats/:chat_id", am.handleRemoveTelegramChat)
 }
 
 // apiKeyMiddleware validates X-API-Key header

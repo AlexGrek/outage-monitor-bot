@@ -6,6 +6,9 @@ import { ConfigPanel } from './components/dashboard/ConfigPanel'
 import { AutoRestartInfo } from './components/dashboard/AutoRestartInfo'
 import { ApiKeyModal } from './components/dashboard/ApiKeyModal'
 import { SourcesPanel } from './components/dashboard/SourcesPanel'
+import { TabNavigation, type TabId } from './components/dashboard/TabNavigation'
+import { SinksPanel } from './components/dashboard/SinksPanel'
+import { EventsPanel } from './components/dashboard/EventsPanel'
 import type {
   HealthResponse,
   StatusResponse,
@@ -16,6 +19,7 @@ import type {
 } from './types'
 
 function App() {
+  const [activeTab, setActiveTab] = useState<TabId>('status')
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [status, setStatus] = useState<StatusResponse | null>(null)
@@ -187,6 +191,9 @@ function App() {
         </div>
       </header>
 
+      {/* Tab Navigation */}
+      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
@@ -197,68 +204,143 @@ function App() {
           </div>
         )}
 
-        {/* Status Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <StatusCard
-            title="System Uptime"
-            value={health ? formatUptime(health.uptime_seconds) : '−'}
-            description="Total running time"
-            icon={<span className="text-2xl">⏱️</span>}
-          />
-          <StatusCard
-            title="Monitor Status"
-            value={
-              health?.monitor_running ? (
-                <span className="text-success-600">Active</span>
-              ) : (
-                <span className="text-error-600">Inactive</span>
-              )
-            }
-            description={health?.monitor_running ? 'Checking sources' : 'Not running'}
-            icon={<span className="text-2xl">🔍</span>}
-          />
-          <StatusCard
-            title="Telegram Status"
-            value={
-              health?.telegram_connected ? (
-                <span className="text-success-600">Connected</span>
-              ) : status?.bot.web_only_mode ? (
-                <span className="text-gray-500">Not Configured</span>
-              ) : (
-                <span className="text-error-600">Disconnected</span>
-              )
-            }
-            description={
-              health?.telegram_connected
-                ? 'Notifications enabled'
-                : status?.bot.web_only_mode
-                ? 'Web-only mode'
-                : 'Check token'
-            }
-            icon={<span className="text-2xl">✈️</span>}
-          />
-          <StatusCard
-            title="Active Sources"
-            value={status?.bot.active_sources ?? '−'}
-            description={`${status?.bot.total_sources ?? 0} total sources`}
-            icon={<span className="text-2xl">📡</span>}
-          />
-          <StatusCard
-            title="API Status"
-            value={
-              health?.api_running ? (
-                <span className="text-success-600">Online</span>
-              ) : (
-                <span className="text-error-600">Offline</span>
-              )
-            }
-            description={status ? `Port ${status.api.port}` : ''}
-            icon={<span className="text-2xl">🌐</span>}
-          />
-        </div>
+        {/* Status & Config Tab */}
+        {activeTab === 'status' && (
+          <div className="space-y-8">
+            {/* Status Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <StatusCard
+                title="System Uptime"
+                value={health ? formatUptime(health.uptime_seconds) : '−'}
+                description="Total running time"
+                icon={<span className="text-2xl">⏱️</span>}
+              />
+              <StatusCard
+                title="Monitor Status"
+                value={
+                  health?.monitor_running ? (
+                    <span className="text-success-600">Active</span>
+                  ) : (
+                    <span className="text-error-600">Inactive</span>
+                  )
+                }
+                description={health?.monitor_running ? 'Checking sources' : 'Not running'}
+                icon={<span className="text-2xl">🔍</span>}
+              />
+              <StatusCard
+                title="Telegram Status"
+                value={
+                  health?.telegram_connected ? (
+                    <span className="text-success-600">Connected</span>
+                  ) : status?.bot.web_only_mode ? (
+                    <span className="text-gray-500">Not Configured</span>
+                  ) : (
+                    <span className="text-error-600">Disconnected</span>
+                  )
+                }
+                description={
+                  health?.telegram_connected
+                    ? 'Notifications enabled'
+                    : status?.bot.web_only_mode
+                    ? 'Web-only mode'
+                    : 'Check token'
+                }
+                icon={<span className="text-2xl">✈️</span>}
+              />
+              <StatusCard
+                title="Active Sources"
+                value={status?.bot.active_sources ?? '−'}
+                description={`${status?.bot.total_sources ?? 0} total sources`}
+                icon={<span className="text-2xl">📡</span>}
+              />
+              <StatusCard
+                title="API Status"
+                value={
+                  health?.api_running ? (
+                    <span className="text-success-600">Online</span>
+                  ) : (
+                    <span className="text-error-600">Offline</span>
+                  )
+                }
+                description={status ? `Port ${status.api.port}` : ''}
+                icon={<span className="text-2xl">🌐</span>}
+              />
+            </div>
 
-        {/* Sources Panel */}
-        <div className="mb-8">
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Configuration Panel (2 columns) */}
+              <div className="lg:col-span-2">
+                <ConfigPanel
+                  config={config}
+                  onUpdate={handleConfigUpdate}
+                  isLoading={loading}
+                />
+              </div>
+
+              {/* Right Sidebar */}
+              <div className="space-y-6">
+                {/* Auto-Restart Info */}
+                {status?.bot.auto_restart && (
+                  <AutoRestartInfo info={status.bot.auto_restart} />
+                )}
+
+                {/* Bot Details */}
+                <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Bot Details</h3>
+                  <div className="space-y-3">
+                    {status?.bot.started_at && (
+                      <div>
+                        <p className="text-xs text-gray-500">Started At</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date(status.bot.started_at).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    {status?.bot.uptime && (
+                      <div>
+                        <p className="text-xs text-gray-500">Uptime</p>
+                        <p className="text-sm font-medium text-gray-900">{status.bot.uptime}</p>
+                      </div>
+                    )}
+                    {status?.bot.last_error && (
+                      <div>
+                        <p className="text-xs text-gray-500">Last Error</p>
+                        <p className="text-sm font-medium text-error-600">
+                          {status.bot.last_error}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* System Info */}
+                {status?.system && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">System Info</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-gray-500">Started At</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date(status.system.started_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Total Uptime</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatUptime(status.system.uptime_seconds)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sources Tab */}
+        {activeTab === 'sources' && (
           <SourcesPanel
             sources={sources}
             onCreateSource={handleCreateSource}
@@ -268,75 +350,13 @@ function App() {
             onResumeSource={handleResumeSource}
             isLoading={loading}
           />
-        </div>
+        )}
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Configuration Panel (2 columns) */}
-          <div className="lg:col-span-2">
-            <ConfigPanel
-              config={config}
-              onUpdate={handleConfigUpdate}
-              isLoading={loading}
-            />
-          </div>
+        {/* Sinks Tab */}
+        {activeTab === 'sinks' && <SinksPanel sources={sources} isLoading={loading} />}
 
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            {/* Auto-Restart Info */}
-            {status?.bot.auto_restart && (
-              <AutoRestartInfo info={status.bot.auto_restart} />
-            )}
-
-            {/* Bot Details */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Bot Details</h3>
-              <div className="space-y-3">
-                {status?.bot.started_at && (
-                  <div>
-                    <p className="text-xs text-gray-500">Started At</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {new Date(status.bot.started_at).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-                {status?.bot.uptime && (
-                  <div>
-                    <p className="text-xs text-gray-500">Uptime</p>
-                    <p className="text-sm font-medium text-gray-900">{status.bot.uptime}</p>
-                  </div>
-                )}
-                {status?.bot.last_error && (
-                  <div>
-                    <p className="text-xs text-gray-500">Last Error</p>
-                    <p className="text-sm font-medium text-error-600">{status.bot.last_error}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* System Info */}
-            {status?.system && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">System Info</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-gray-500">Started At</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {new Date(status.system.started_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Total Uptime</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatUptime(status.system.uptime_seconds)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Events Tab */}
+        {activeTab === 'events' && <EventsPanel sources={sources} isLoading={loading} />}
       </main>
     </div>
   )

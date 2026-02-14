@@ -44,20 +44,20 @@ service:
   apiPort: 8080
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  enabled: true
+  className: traefik
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
-    - host: monitor.example.com
+    - host: outagemonitor.alexgr.space
       paths:
         - path: /
           pathType: Prefix
-  tls: []
-  #  - secretName: monitor-tls
-  #    hosts:
-  #      - monitor.example.com
+  tls:
+    - secretName: outagemonitor-tls
+      hosts:
+        - outagemonitor.alexgr.space
 
 resources:
   # Resource limits based on actual usage (1m CPU, 23Mi memory)
