@@ -203,6 +203,52 @@ class ApiClient {
     const endpoint = query ? `/events?${query}` : '/events'
     return this.request<StatusChangeEvent[]>(endpoint)
   }
+
+  // Source-Webhook associations (require auth)
+  async getSourceWebhooks(sourceId: string): Promise<Webhook[]> {
+    return this.request<Webhook[]>(`/sources/${sourceId}/webhooks`)
+  }
+
+  async addSourceWebhook(
+    sourceId: string,
+    webhookId: string
+  ): Promise<{ message: string; source_id: string; webhook_id: string }> {
+    return this.request<{ message: string; source_id: string; webhook_id: string }>(
+      `/sources/${sourceId}/webhooks/${webhookId}`,
+      { method: 'POST' }
+    )
+  }
+
+  async removeSourceWebhook(
+    sourceId: string,
+    webhookId: string
+  ): Promise<{ message: string; source_id: string; webhook_id: string }> {
+    return this.request<{ message: string; source_id: string; webhook_id: string }>(
+      `/sources/${sourceId}/webhooks/${webhookId}`,
+      { method: 'DELETE' }
+    )
+  }
+
+  // Source-TelegramChat associations (require auth)
+  async addSourceTelegramChat(
+    sourceId: string,
+    chatId: number
+  ): Promise<{ message: string; source_id: string; chat_id: number }> {
+    return this.request<{ message: string; source_id: string; chat_id: number }>(
+      `/sources/${sourceId}/telegram-chats/${chatId}`,
+      { method: 'POST' }
+    )
+  }
+
+  async removeSourceTelegramChat(
+    sourceId: string,
+    chatId: number
+  ): Promise<{ message: string; source_id: string; chat_id: number }> {
+    return this.request<{ message: string; source_id: string; chat_id: number }>(
+      `/sources/${sourceId}/telegram-chats/${chatId}`,
+      { method: 'DELETE' }
+    )
+  }
 }
 
 export const api = new ApiClient()

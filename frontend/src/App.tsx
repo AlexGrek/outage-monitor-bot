@@ -353,10 +353,10 @@ function App() {
         )}
 
         {/* Sinks Tab */}
-        {activeTab === 'sinks' && <SinksPanel sources={sources} isLoading={loading} />}
+        {activeTab === 'sinks' && <SinksPanel />}
 
         {/* Events Tab */}
-        {activeTab === 'events' && <EventsPanel sources={sources} isLoading={loading} />}
+        {activeTab === 'events' && <EventsPanel sources={sources} />}
       </main>
     </div>
   )

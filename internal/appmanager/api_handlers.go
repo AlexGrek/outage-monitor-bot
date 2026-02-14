@@ -22,21 +22,25 @@ func (am *AppManager) setupRoutes() {
 	am.echoServer.GET("/health", am.handleHealth)
 	am.echoServer.GET("/status", am.handleStatus)
 
-	// Source endpoints
+	// Source endpoints - collection routes
 	am.echoServer.GET("/sources", am.handleGetSources)
 	am.echoServer.POST("/sources", am.handleCreateSource)
-	am.echoServer.PUT("/sources/:id", am.handleUpdateSource)
-	am.echoServer.DELETE("/sources/:id", am.handleDeleteSource)
+	// Source-specific sub-resource routes (must come BEFORE generic :id routes)
+	// These use :source_id or :id as parameter names matching their handlers
 	am.echoServer.POST("/sources/:id/pause", am.handlePauseSource)
 	am.echoServer.POST("/sources/:id/resume", am.handleResumeSource)
+	am.echoServer.GET("/sources/:source_id/webhooks", am.handleGetSourceWebhooks)
+	am.echoServer.POST("/sources/:source_id/webhooks/:webhook_id", am.handleAddSourceWebhook)
+	am.echoServer.DELETE("/sources/:source_id/webhooks/:webhook_id", am.handleRemoveSourceWebhook)
+	// Generic source routes (must come AFTER specific sub-resource routes)
+	am.echoServer.PUT("/sources/:id", am.handleUpdateSource)
+	am.echoServer.DELETE("/sources/:id", am.handleDeleteSource)
 
 	// Webhook endpoints
 	am.echoServer.GET("/webhooks", am.handleGetWebhooks)
 	am.echoServer.POST("/webhooks", am.handleCreateWebhook)
 	am.echoServer.PUT("/webhooks/:id", am.handleUpdateWebhook)
 	am.echoServer.DELETE("/webhooks/:id", am.handleDeleteWebhook)
-	am.echoServer.POST("/sources/:source_id/webhooks/:webhook_id", am.handleAddSourceWebhook)
-	am.echoServer.DELETE("/sources/:source_id/webhooks/:webhook_id", am.handleRemoveSourceWebhook)
 
 	// Events endpoints
 	am.echoServer.GET("/events", am.handleGetEvents)
@@ -57,13 +61,15 @@ func (am *AppManager) apiKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		apiKey := c.Request().Header.Get("X-API-Key")
 		if apiKey == "" {
+			am.logger.Printf("Missing API key from %s on %s %s", c.RealIP(), c.Request().Method, c.Path())
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "Missing X-API-Key header",
 			})
 		}
 
 		if apiKey != am.apiKey {
-			am.logger.Printf("Invalid API key attempt from %s", c.RealIP())
+			am.logger.Printf("Invalid API key attempt from %s on %s %s - provided: %q (expected: %q)",
+				c.RealIP(), c.Request().Method, c.Path(), apiKey, am.apiKey)
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "Invalid API key",
 			})

@@ -1,16 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
 import { api } from '../../lib/api'
-import type { Webhook, CreateWebhookRequest, TelegramChat, Source } from '../../types'
+import type { Webhook, CreateWebhookRequest, TelegramChat } from '../../types'
 
-interface SinksPanelProps {
-  sources?: Source[] | null
-  isLoading?: boolean
-}
-
-export function SinksPanel({ sources = null, isLoading = false }: SinksPanelProps) {
+export function SinksPanel() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
   const [telegramChats, setTelegramChats] = useState<TelegramChat[]>([])
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Webhook management
@@ -30,7 +24,6 @@ export function SinksPanel({ sources = null, isLoading = false }: SinksPanelProp
   const loadData = useCallback(async () => {
     try {
       setError(null)
-      setLoading(true)
       const [webhooksData, chatsData] = await Promise.all([
         api.getWebhooks(),
         api.getTelegramChats(),
@@ -39,8 +32,6 @@ export function SinksPanel({ sources = null, isLoading = false }: SinksPanelProp
       setTelegramChats(chatsData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load sinks')
-    } finally {
-      setLoading(false)
     }
   }, [])
 

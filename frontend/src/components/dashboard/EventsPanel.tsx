@@ -4,10 +4,9 @@ import type { StatusChangeEvent, Source } from '../../types'
 
 interface EventsPanelProps {
   sources?: Source[] | null
-  isLoading?: boolean
 }
 
-export function EventsPanel({ sources = null, isLoading = false }: EventsPanelProps) {
+export function EventsPanel({ sources = null }: EventsPanelProps) {
   const [events, setEvents] = useState<StatusChangeEvent[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

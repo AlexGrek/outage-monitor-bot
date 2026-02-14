@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -106,6 +108,15 @@ func (am *AppManager) startEchoServer() error {
 	// Setup routes
 	am.setupRoutes()
 
+	// Log API key in development mode
+	if am.isDevMode() {
+		if am.apiKey == "" {
+			am.logger.Println("⚠️  DEV MODE: No API key configured. API will require X-API-Key header.")
+		} else {
+			am.logger.Printf("🔑 DEV MODE: API Key = %s", am.apiKey)
+		}
+	}
+
 	// Start server in goroutine
 	go func() {
 		addr := fmt.Sprintf(":%d", am.apiPort)
@@ -168,4 +179,24 @@ func (am *AppManager) Shutdown() error {
 
 	am.logger.Println("✅ AppManager shutdown complete")
 	return nil
+}
+
+// isDevMode checks if the application is running in development mode
+func (am *AppManager) isDevMode() bool {
+	// Check for DEBUG, DEV, or DEVELOPMENT environment variables
+	debug := os.Getenv("DEBUG")
+	dev := os.Getenv("DEV")
+	development := os.Getenv("DEVELOPMENT")
+
+	// Return true if any dev mode indicator is set to a truthy value
+	for _, env := range []string{debug, dev, development} {
+		if env != "" {
+			lower := strings.ToLower(env)
+			if lower == "true" || lower == "1" || lower == "yes" || lower == "on" {
+				return true
+			}
+		}
+	}
+
+	return false
 }

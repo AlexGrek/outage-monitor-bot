@@ -11,6 +11,7 @@ import (
 	"tg-monitor-bot/internal/bot"
 	"tg-monitor-bot/internal/config"
 	"tg-monitor-bot/internal/monitor"
+	"tg-monitor-bot/internal/notifier"
 	"tg-monitor-bot/internal/storage"
 )
 
@@ -75,8 +76,11 @@ func (bp *BotProcess) Start(cfg *config.Config) error {
 		bp.logger.Println("   Monitor will check sources but won't send Telegram notifications")
 		bp.logger.Println("   API endpoints are fully functional for source management")
 
-		// Initialize Monitor without bot callback (no notifications)
-		mon := monitor.New(bp.storage, cfg, nil)
+		// Create webhook notifier (still sends webhooks even without Telegram)
+		webhookNotifier := notifier.NewWebhookNotifier(bp.storage)
+
+		// Initialize Monitor with webhook callback only (no Telegram bot)
+		mon := monitor.New(bp.storage, cfg, webhookNotifier.OnStatusChange)
 		bp.monitor = mon
 
 		// Start monitor (loads sources and starts goroutines)
@@ -108,8 +112,19 @@ func (bp *BotProcess) Start(cfg *config.Config) error {
 	}
 	bp.bot = telegramBot
 
-	// Initialize Monitor with callback to Bot.OnStatusChange
-	mon := monitor.New(bp.storage, cfg, telegramBot.OnStatusChange)
+	// Create webhook notifier
+	webhookNotifier := notifier.NewWebhookNotifier(bp.storage)
+
+	// Create composite callback that calls both bot and webhook notifier
+	compositeCallback := func(source *storage.Source, change *storage.StatusChange) {
+		// Call bot callback (Telegram notifications)
+		go telegramBot.OnStatusChange(source, change)
+		// Call webhook notifier callback
+		go webhookNotifier.OnStatusChange(source, change)
+	}
+
+	// Initialize Monitor with composite callback
+	mon := monitor.New(bp.storage, cfg, compositeCallback)
 	bp.monitor = mon
 
 	// Wire monitor to bot

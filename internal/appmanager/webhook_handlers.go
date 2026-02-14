@@ -213,3 +213,29 @@ func (am *AppManager) handleRemoveSourceWebhook(c echo.Context) error {
 		"webhook_id": webhookID,
 	})
 }
+
+// handleGetSourceWebhooks returns all webhooks for a source
+func (am *AppManager) handleGetSourceWebhooks(c echo.Context) error {
+	sourceID := c.Param("source_id")
+
+	// Verify source exists
+	if _, err := am.storage.GetSource(sourceID); err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "Source not found",
+		})
+	}
+
+	webhooks, err := am.storage.GetSourceWebhooks(sourceID)
+	if err != nil {
+		am.logger.Printf("Failed to get source webhooks: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get source webhooks",
+		})
+	}
+
+	if webhooks == nil {
+		webhooks = []*storage.Webhook{}
+	}
+
+	return c.JSON(http.StatusOK, webhooks)
+}

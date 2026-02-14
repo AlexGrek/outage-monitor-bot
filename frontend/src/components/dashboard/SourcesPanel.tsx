@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Source, CreateSourceRequest, UpdateSourceRequest } from '../../types'
+import { SourceSinksModal } from './SourceSinksModal'
 
 interface SourcesPanelProps {
   sources: Source[] | null
@@ -29,6 +30,7 @@ export function SourcesPanel({
 }: SourcesPanelProps) {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingSource, setEditingSource] = useState<Source | null>(null)
+  const [sinksSourceId, setSinksSourceId] = useState<string | null>(null)
   const [formData, setFormData] = useState<SourceFormData>({
     name: '',
     type: 'ping',
@@ -280,6 +282,14 @@ export function SourcesPanel({
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setSinksSourceId(source.id)}
+                  disabled={submitting}
+                  className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md"
+                  title="Configure webhooks and telegram chats for this source"
+                >
+                  Sinks
+                </button>
+                <button
                   onClick={() => handleTogglePause(source)}
                   disabled={submitting}
                   className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
@@ -305,6 +315,19 @@ export function SourcesPanel({
           ))
         )}
       </div>
+
+      {/* Sinks Configuration Modal */}
+      {sinksSourceId && (
+        <SourceSinksModal
+          source={sources.find((s) => s.id === sinksSourceId)!}
+          isOpen={!!sinksSourceId}
+          onClose={() => setSinksSourceId(null)}
+          onSinksUpdated={() => {
+            // Modal has updated sinks, parent will refresh via normal polling
+            setSinksSourceId(null)
+          }}
+        />
+      )}
     </div>
   )
 }
