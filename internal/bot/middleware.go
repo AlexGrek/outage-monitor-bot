@@ -170,3 +170,12 @@ func (b *Bot) OnStatusChange(source *storage.Source, change *storage.StatusChang
 		}
 	}
 }
+
+// SendTestMessage sends a test message to a specific chat (for testing notifications)
+func (b *Bot) SendTestMessage(ctx context.Context, chatID int64, text string) error {
+	_, err := b.bot.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: chatID,
+		Text:   text,
+	})
+	return err
+}

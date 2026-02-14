@@ -49,6 +49,10 @@ func (am *AppManager) setupRoutes() {
 	am.echoServer.GET("/telegram-chats", am.handleGetTelegramChats)
 	am.echoServer.POST("/telegram-chats", am.handleAddTelegramChat)
 	am.echoServer.DELETE("/telegram-chats/:chat_id", am.handleRemoveTelegramChat)
+
+	// Test notification endpoints
+	am.echoServer.POST("/test/telegram/:chat_id", am.handleTestTelegramChat)
+	am.echoServer.POST("/test/webhook/:webhook_id", am.handleTestWebhook)
 }
 
 // apiKeyMiddleware validates X-API-Key header

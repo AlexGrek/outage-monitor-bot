@@ -99,6 +99,26 @@ export function SinksPanel() {
     }
   }
 
+  const handleTestTelegramChat = async (chatId: number) => {
+    try {
+      setError(null)
+      await api.testTelegramChat(chatId)
+      alert(`Test notification sent to chat ${chatId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send test notification')
+    }
+  }
+
+  const handleTestWebhook = async (webhookId: string, url: string) => {
+    try {
+      setError(null)
+      await api.testWebhook(webhookId)
+      alert(`Test notification sent to webhook: ${url}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send test notification')
+    }
+  }
+
   if (!api.getApiKey()) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -185,12 +205,20 @@ export function SinksPanel() {
                     Added {new Date(chat.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleRemoveChat(chat.chat_id)}
-                  className="px-3 py-1 text-sm text-error-600 hover:text-error-700 font-medium"
-                >
-                  Remove
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleTestTelegramChat(chat.chat_id)}
+                    className="px-3 py-1 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    Test
+                  </button>
+                  <button
+                    onClick={() => handleRemoveChat(chat.chat_id)}
+                    className="px-3 py-1 text-sm text-error-600 hover:text-error-700 font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -347,12 +375,21 @@ export function SinksPanel() {
                       ` • Last triggered ${new Date(webhook.last_triggered).toLocaleTimeString()}`}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleDeleteWebhook(webhook.id)}
-                  className="px-3 py-1 text-sm text-error-600 hover:text-error-700 font-medium"
-                >
-                  Delete
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleTestWebhook(webhook.id, webhook.url)}
+                    disabled={!webhook.enabled}
+                    className="px-3 py-1 text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Test
+                  </button>
+                  <button
+                    onClick={() => handleDeleteWebhook(webhook.id)}
+                    className="px-3 py-1 text-sm text-error-600 hover:text-error-700 font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))
           )}

@@ -249,6 +249,25 @@ class ApiClient {
       { method: 'DELETE' }
     )
   }
+
+  // Test notification endpoints (require auth)
+  async testTelegramChat(
+    chatId: number
+  ): Promise<{ message: string; chat_id: number; sent_at: string }> {
+    return this.request<{ message: string; chat_id: number; sent_at: string }>(
+      `/test/telegram/${chatId}`,
+      { method: 'POST' }
+    )
+  }
+
+  async testWebhook(
+    webhookId: string
+  ): Promise<{ message: string; webhook_id: string; url: string; sent_at: string }> {
+    return this.request<{ message: string; webhook_id: string; url: string; sent_at: string }>(
+      `/test/webhook/${webhookId}`,
+      { method: 'POST' }
+    )
+  }
 }
 
 export const api = new ApiClient()

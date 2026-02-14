@@ -20,21 +20,22 @@ type RestartFunc func() error
 
 // BotProcess manages the bot lifecycle
 type BotProcess struct {
-	config         *config.Config
-	storage        *storage.BoltDB
-	bot            *bot.Bot
-	monitor        *monitor.Monitor
-	ctx            context.Context
-	cancel         context.CancelFunc
-	running        bool
-	healthy        bool
-	lastError      error
-	startTime      time.Time
-	restartFunc    RestartFunc
+	config          *config.Config
+	storage         *storage.BoltDB
+	bot             *bot.Bot
+	monitor         *monitor.Monitor
+	webhookNotifier *notifier.WebhookNotifier
+	ctx             context.Context
+	cancel          context.CancelFunc
+	running         bool
+	healthy         bool
+	lastError       error
+	startTime       time.Time
+	restartFunc     RestartFunc
 	restartAttempts int
-	restartTimer   *time.Timer
-	mu             sync.Mutex
-	logger         *log.Logger
+	restartTimer    *time.Timer
+	mu              sync.Mutex
+	logger          *log.Logger
 }
 
 // NewBotProcess creates a new BotProcess
@@ -78,6 +79,7 @@ func (bp *BotProcess) Start(cfg *config.Config) error {
 
 		// Create webhook notifier (still sends webhooks even without Telegram)
 		webhookNotifier := notifier.NewWebhookNotifier(bp.storage)
+		bp.webhookNotifier = webhookNotifier
 
 		// Initialize Monitor with webhook callback only (no Telegram bot)
 		mon := monitor.New(bp.storage, cfg, webhookNotifier.OnStatusChange)
@@ -114,6 +116,7 @@ func (bp *BotProcess) Start(cfg *config.Config) error {
 
 	// Create webhook notifier
 	webhookNotifier := notifier.NewWebhookNotifier(bp.storage)
+	bp.webhookNotifier = webhookNotifier
 
 	// Create composite callback that calls both bot and webhook notifier
 	compositeCallback := func(source *storage.Source, change *storage.StatusChange) {
@@ -217,8 +220,9 @@ func (bp *BotProcess) Stop() error {
 	bp.running = false
 	bp.bot = nil
 	bp.monitor = nil
+	bp.webhookNotifier = nil
 
-	bp.logger.Println("✅ Bot process stopped")
+	bp.logger.Println("Bot process stopped")
 
 	return nil
 }
@@ -423,6 +427,20 @@ func (bp *BotProcess) GetContext() context.Context {
 	bp.mu.Lock()
 	defer bp.mu.Unlock()
 	return bp.ctx
+}
+
+// GetBot returns the bot instance (for test notifications)
+func (bp *BotProcess) GetBot() *bot.Bot {
+	bp.mu.Lock()
+	defer bp.mu.Unlock()
+	return bp.bot
+}
+
+// GetWebhookNotifier returns the webhook notifier instance (for test notifications)
+func (bp *BotProcess) GetWebhookNotifier() *notifier.WebhookNotifier {
+	bp.mu.Lock()
+	defer bp.mu.Unlock()
+	return bp.webhookNotifier
 }
 
 // formatBotError converts cryptic Telegram API errors into user-friendly messages
