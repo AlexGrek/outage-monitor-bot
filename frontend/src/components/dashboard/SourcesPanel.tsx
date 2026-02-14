@@ -2,8 +2,12 @@ import { useState } from 'react'
 import type { Source, CreateSourceRequest, UpdateSourceRequest } from '../../types'
 import { SourceSinksModal } from './SourceSinksModal'
 
+const GRACE_PERIOD_PRESETS = [1.1, 1.5, 2.0, 2.1, 2.5, 3.1, 4.1, 5, 10] as const
+const DEFAULT_GRACE_MULTIPLIER = 2.5
+
 interface SourcesPanelProps {
   sources: Source[] | null
+  config?: Record<string, string> | null
   onCreateSource: (data: CreateSourceRequest) => Promise<void>
   onUpdateSource: (id: string, data: UpdateSourceRequest) => Promise<void>
   onDeleteSource: (id: string) => Promise<void>
@@ -14,13 +18,18 @@ interface SourcesPanelProps {
 
 type SourceFormData = {
   name: string
-  type: 'ping' | 'http'
+  type: 'ping' | 'http' | 'webhook'
   target: string
   check_interval: string
+  grace_period_multiplier: number
+  grace_custom: string
+  expected_headers: string
+  expected_content: string
 }
 
 export function SourcesPanel({
   sources,
+  config,
   onCreateSource,
   onUpdateSource,
   onDeleteSource,
@@ -36,16 +45,68 @@ export function SourcesPanel({
     type: 'ping',
     target: '',
     check_interval: '30s',
+    grace_period_multiplier: DEFAULT_GRACE_MULTIPLIER,
+    grace_custom: '',
+    expected_headers: '',
+    expected_content: '',
   })
   const [submitting, setSubmitting] = useState(false)
+
+  const webhookBaseUrl = config?.WEBHOOK_BASE_URL ?? config?.PUBLIC_URL ?? ''
+
+  const buildCreatePayload = (): CreateSourceRequest => {
+    const base = { name: formData.name, type: formData.type, check_interval: formData.check_interval }
+    if (formData.type === 'webhook') {
+      const mult = formData.grace_custom ? parseFloat(formData.grace_custom) : formData.grace_period_multiplier
+      return {
+        ...base,
+        grace_period_multiplier: Number.isFinite(mult) ? mult : DEFAULT_GRACE_MULTIPLIER,
+        expected_headers: formData.expected_headers || undefined,
+        expected_content: formData.expected_content || undefined,
+      }
+    }
+    return { ...base, target: formData.target }
+  }
+
+  const buildUpdatePayload = (): UpdateSourceRequest => {
+    const base = {
+      name: formData.name,
+      type: formData.type,
+      check_interval: formData.check_interval,
+      enabled: editingSource!.enabled,
+    }
+    if (formData.type === 'webhook') {
+      const mult = formData.grace_custom ? parseFloat(formData.grace_custom) : formData.grace_period_multiplier
+      return {
+        ...base,
+        grace_period_multiplier: Number.isFinite(mult) ? mult : DEFAULT_GRACE_MULTIPLIER,
+        expected_headers: formData.expected_headers || undefined,
+        expected_content: formData.expected_content || undefined,
+      }
+    }
+    return { ...base, target: formData.target }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      type: 'ping',
+      target: '',
+      check_interval: '30s',
+      grace_period_multiplier: DEFAULT_GRACE_MULTIPLIER,
+      grace_custom: '',
+      expected_headers: '',
+      expected_content: '',
+    })
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     try {
-      await onCreateSource(formData)
+      await onCreateSource(buildCreatePayload())
       setShowCreateForm(false)
-      setFormData({ name: '', type: 'ping', target: '', check_interval: '30s' })
+      resetForm()
     } catch (error) {
       console.error('Failed to create source:', error)
     } finally {
@@ -55,11 +116,17 @@ export function SourcesPanel({
 
   const handleEdit = (source: Source) => {
     setEditingSource(source)
+    const grace = source.grace_period_multiplier ?? DEFAULT_GRACE_MULTIPLIER
+    const isPreset = GRACE_PERIOD_PRESETS.includes(grace as (typeof GRACE_PERIOD_PRESETS)[number])
     setFormData({
       name: source.name,
       type: source.type,
-      target: source.target,
+      target: source.target ?? '',
       check_interval: formatDuration(source.check_interval),
+      grace_period_multiplier: isPreset ? grace : DEFAULT_GRACE_MULTIPLIER,
+      grace_custom: isPreset ? '' : String(grace),
+      expected_headers: source.expected_headers ?? '',
+      expected_content: source.expected_content ?? '',
     })
   }
 
@@ -69,12 +136,9 @@ export function SourcesPanel({
 
     setSubmitting(true)
     try {
-      await onUpdateSource(editingSource.id, {
-        ...formData,
-        enabled: editingSource.enabled,
-      })
+      await onUpdateSource(editingSource.id, buildUpdatePayload())
       setEditingSource(null)
-      setFormData({ name: '', type: 'ping', target: '', check_interval: '30s' })
+      resetForm()
     } catch (error) {
       console.error('Failed to update source:', error)
     } finally {
@@ -191,30 +255,33 @@ export function SourcesPanel({
               <select
                 value={formData.type}
                 onChange={(e) =>
-                  setFormData({ ...formData, type: e.target.value as 'ping' | 'http' })
+                  setFormData({ ...formData, type: e.target.value as 'ping' | 'http' | 'webhook' })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="ping">ICMP Ping</option>
                 <option value="http">HTTP/HTTPS</option>
+                <option value="webhook">Incoming Webhook</option>
               </select>
             </div>
+            {formData.type !== 'webhook' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Target
+                </label>
+                <input
+                  type="text"
+                  value={formData.target}
+                  onChange={(e) => setFormData({ ...formData, target: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder={formData.type === 'ping' ? '8.8.8.8' : 'https://example.com'}
+                  required
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Target
-              </label>
-              <input
-                type="text"
-                value={formData.target}
-                onChange={(e) => setFormData({ ...formData, target: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder={formData.type === 'ping' ? '8.8.8.8' : 'https://example.com'}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Check Interval
+                {formData.type === 'webhook' ? 'Expected period (heartbeat interval)' : 'Check Interval'}
               </label>
               <input
                 type="text"
@@ -227,6 +294,70 @@ export function SourcesPanel({
                 required
               />
             </div>
+            {formData.type === 'webhook' && (
+              <>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Grace period multiplier (mark offline if no heartbeat in period x this)
+                  </label>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <select
+                      value={formData.grace_custom ? 'custom' : String(formData.grace_period_multiplier)}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v === 'custom') {
+                          setFormData({ ...formData, grace_custom: String(DEFAULT_GRACE_MULTIPLIER), grace_period_multiplier: DEFAULT_GRACE_MULTIPLIER })
+                        } else {
+                          setFormData({ ...formData, grace_period_multiplier: parseFloat(v), grace_custom: '' })
+                        }
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {GRACE_PERIOD_PRESETS.map((n) => (
+                        <option key={n} value={String(n)}>{n}x</option>
+                      ))}
+                      <option value="custom">Custom</option>
+                    </select>
+                    {formData.grace_custom !== '' && (
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        step={0.1}
+                        value={formData.grace_custom}
+                        onChange={(e) => setFormData({ ...formData, grace_custom: e.target.value })}
+                        className="w-20 px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="e.g. 2.5"
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expected headers (optional, JSON) e.g. {`{"X-Auth":"secret"}`}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.expected_headers}
+                    onChange={(e) => setFormData({ ...formData, expected_headers: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                    placeholder='{"X-Custom-Header": "value"}'
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expected content in body (optional, substring)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.expected_content}
+                    onChange={(e) => setFormData({ ...formData, expected_content: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g. ok or heartbeat"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <div className="flex gap-2 mt-4">
             <button
@@ -241,7 +372,7 @@ export function SourcesPanel({
               onClick={() => {
                 setShowCreateForm(false)
                 setEditingSource(null)
-                setFormData({ name: '', type: 'ping', target: '', check_interval: '30s' })
+                resetForm()
               }}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
@@ -276,8 +407,20 @@ export function SourcesPanel({
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {source.type.toUpperCase()} • {source.target} • every{' '}
-                  {formatDuration(source.check_interval)}
+                  {source.type === 'webhook' ? (
+                    <>
+                      Webhook • every {formatDuration(source.check_interval)}
+                      {source.webhook_token && (
+                        <span className="block mt-1 font-mono text-gray-700 truncate" title={webhookBaseUrl ? `${webhookBaseUrl.replace(/\/$/, '')}/webhooks/incoming/${source.webhook_token}` : undefined}>
+                          {webhookBaseUrl ? `${webhookBaseUrl.replace(/\/$/, '')}/webhooks/incoming/${source.webhook_token}` : `/webhooks/incoming/${source.webhook_token}`}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {source.type.toUpperCase()} • {source.target} • every {formatDuration(source.check_interval)}
+                    </>
+                  )}
                 </p>
               </div>
               <div className="flex items-center gap-2">

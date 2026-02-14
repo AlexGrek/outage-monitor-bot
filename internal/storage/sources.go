@@ -11,16 +11,21 @@ import (
 
 // Source represents a monitoring source
 type Source struct {
-	ID             string        `msgpack:"id" json:"id"`
-	Name           string        `msgpack:"name" json:"name"`
-	Type           string        `msgpack:"type" json:"type"` // "ping" or "http"
-	Target         string        `msgpack:"target" json:"target"`
-	CheckInterval  time.Duration `msgpack:"check_interval" json:"check_interval"`
-	CurrentStatus  int           `msgpack:"current_status" json:"current_status"`     // 1 (online) or 0 (offline)
-	LastCheckTime  time.Time     `msgpack:"last_check_time" json:"last_check_time"`
-	LastChangeTime time.Time     `msgpack:"last_change_time" json:"last_change_time"` // When status last changed
-	Enabled        bool          `msgpack:"enabled" json:"enabled"`
-	CreatedAt      time.Time     `msgpack:"created_at" json:"created_at"`
+	ID                    string        `msgpack:"id" json:"id"`
+	Name                  string        `msgpack:"name" json:"name"`
+	Type                  string        `msgpack:"type" json:"type"` // "ping", "http", or "webhook"
+	Target                string        `msgpack:"target" json:"target"`
+	CheckInterval         time.Duration `msgpack:"check_interval" json:"check_interval"`
+	CurrentStatus         int           `msgpack:"current_status" json:"current_status"`     // 1 (online) or 0 (offline)
+	LastCheckTime         time.Time     `msgpack:"last_check_time" json:"last_check_time"`
+	LastChangeTime        time.Time     `msgpack:"last_change_time" json:"last_change_time"` // When status last changed
+	Enabled               bool          `msgpack:"enabled" json:"enabled"`
+	CreatedAt             time.Time     `msgpack:"created_at" json:"created_at"`
+	// Webhook (incoming) source only
+	WebhookToken          string  `msgpack:"webhook_token" json:"webhook_token,omitempty"`
+	GracePeriodMultiplier float64 `msgpack:"grace_period_multiplier" json:"grace_period_multiplier,omitempty"`
+	ExpectedHeaders       string  `msgpack:"expected_headers" json:"expected_headers,omitempty"` // JSON object: {"Header-Name":"value"}
+	ExpectedContent       string  `msgpack:"expected_content" json:"expected_content,omitempty"`
 }
 
 // SaveSource stores a source in the database
@@ -113,6 +118,37 @@ func (b *BoltDB) GetSourceByName(name string) (*Source, error) {
 	return source, err
 }
 
+// GetSourceByWebhookToken retrieves a webhook source by its incoming webhook token
+func (b *BoltDB) GetSourceByWebhookToken(token string) (*Source, error) {
+	if token == "" {
+		return nil, fmt.Errorf("webhook token is empty")
+	}
+
+	var source *Source
+	err := b.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(sourcesBucket))
+		if bucket == nil {
+			return fmt.Errorf("sources bucket not found")
+		}
+
+		c := bucket.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			var s Source
+			if err := msgpack.Unmarshal(v, &s); err != nil {
+				continue
+			}
+			if s.Type == "webhook" && s.WebhookToken == token {
+				source = &s
+				return nil
+			}
+		}
+
+		return fmt.Errorf("source not found")
+	})
+
+	return source, err
+}
+
 // GetAllSources retrieves all sources
 func (b *BoltDB) GetAllSources() ([]*Source, error) {
 	var sources []*Source
@@ -193,12 +229,11 @@ func (b *BoltDB) UpdateSourceStatus(id string, status int, checkTime time.Time) 
 			return fmt.Errorf("failed to unmarshal source: %w", err)
 		}
 
-		// Update status
+		oldStatus := source.CurrentStatus
 		source.CurrentStatus = status
 		source.LastCheckTime = checkTime
 
-		// If status changed, update change time
-		if status != source.CurrentStatus {
+		if status != oldStatus {
 			source.LastChangeTime = checkTime
 		}
 

@@ -209,10 +209,46 @@ func (m *Monitor) CheckSource(source *storage.Source) int {
 		return m.PingTarget(source.Target)
 	case "http":
 		return m.CheckHTTP(source.Target)
+	case "webhook":
+		return m.checkWebhookSource(source)
 	default:
 		m.logger.Printf("Unknown source type: %s", source.Type)
 		return 0
 	}
+}
+
+// checkWebhookSource returns 1 if last heartbeat was within grace period, 0 otherwise
+func (m *Monitor) checkWebhookSource(source *storage.Source) int {
+	if source.LastCheckTime.IsZero() {
+		m.logger.Printf("Webhook check %s: OFFLINE (no heartbeat yet)", source.Name)
+		return 0
+	}
+	mult := source.GracePeriodMultiplier
+	if mult <= 0 {
+		mult = 2.5
+	}
+	graceDuration := time.Duration(float64(source.CheckInterval) * mult)
+	deadline := source.LastCheckTime.Add(graceDuration)
+	if time.Now().After(deadline) {
+		m.logger.Printf("Webhook check %s: OFFLINE (last heartbeat %v ago, grace %v)", source.Name, time.Since(source.LastCheckTime).Round(time.Second), graceDuration.Round(time.Second))
+		return 0
+	}
+	m.logger.Printf("Webhook check %s: ONLINE (heartbeat within grace period)", source.Name)
+	return 1
+}
+
+// RecordWebhookReceived updates the in-memory source after an incoming webhook heartbeat.
+// Call this after persisting via storage.UpdateSourceStatus so the next tick uses the new LastCheckTime.
+func (m *Monitor) RecordWebhookReceived(sourceID string, receivedAt time.Time) {
+	m.sourcesMu.Lock()
+	defer m.sourcesMu.Unlock()
+	source, exists := m.sources[sourceID]
+	if !exists {
+		return
+	}
+	source.LastCheckTime = receivedAt
+	source.CurrentStatus = 1
+	m.sources[sourceID] = source
 }
 
 // monitorSource continuously monitors a single source
@@ -248,8 +284,10 @@ func (m *Monitor) performCheck(source *storage.Source) {
 	checkTime := time.Now()
 	newStatus := m.CheckSource(source)
 
-	// Update last check time
-	source.LastCheckTime = checkTime
+	// Update last check time (for ping/http; webhook uses LastCheckTime as last heartbeat received)
+	if source.Type != "webhook" {
+		source.LastCheckTime = checkTime
+	}
 
 	// Check if status changed
 	if newStatus != source.CurrentStatus {

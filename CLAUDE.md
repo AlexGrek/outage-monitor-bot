@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Outage Monitor Bot** - An automated monitoring system that continuously checks infrastructure (via ICMP ping or HTTP), detects status changes, and sends instant notifications to multiple sinks (Telegram chats, webhooks, etc.) when outages occur or services are restored.
+**Outage Monitor Bot** - An automated monitoring system that continuously checks infrastructure (via ICMP ping, HTTP, or incoming webhook heartbeats), detects status changes, and sends instant notifications to multiple sinks (Telegram chats, webhooks, etc.) when outages occur or services are restored.
 
 **Key characteristics:**
 - Binary status monitoring (1=online, 0=offline)
+- Source types: **ping** (ICMP), **http** (outbound check), **webhook** (incoming heartbeat; mark offline if no request within grace period)
 - Continuous goroutine-based checking (one per source)
 - Immediate persistence to BoltDB (survives restarts)
 - Duration tracking for uptime/downtime
@@ -26,6 +27,7 @@ main.go
        │    └─> Trigger bot restart on change
        │
        ├─> Echo REST API (configuration management)
+       │    ├─> GET/POST /webhooks/incoming/:token - Incoming webhook heartbeat (no API key)
        │    ├─> GET /config - List all config
        │    ├─> PUT /config/:key - Update config
        │    ├─> POST /config/reload - Restart bot
@@ -55,8 +57,8 @@ main.go
 
 - **Echo REST API**: HTTP server for dynamic configuration
   - API key authentication via `X-API-Key` header
+  - Health and `/webhooks/incoming/:token` bypass authentication (incoming webhook is public URL for monitored services)
   - Runs in separate goroutine alongside bot
-  - Health endpoint bypasses authentication
   - All config changes saved immediately to DB
 
 - **BotProcess**: Bot lifecycle management
@@ -79,7 +81,7 @@ main.go
 **Status Change Flow:**
 ```
 Monitor.monitorSource (goroutine)
-  → CheckSource (ping or HTTP)
+  → CheckSource (ping, HTTP, or webhook: compare now vs LastCheckTime + grace period)
   → Detect status change
   → Calculate duration since last change
   → Save StatusChange to DB (immediate write)
@@ -90,6 +92,8 @@ Monitor.monitorSource (goroutine)
       → Format notification message
       → Send to all configured chats
 ```
+
+**Webhook (incoming) source:** No outbound check. Monitored service sends GET or POST to `/webhooks/incoming/:token`. On request: validate optional headers/body, call `UpdateSourceStatus(id, 1, now)` and `Monitor.RecordWebhookReceived(id, now)`. On each tick, `checkWebhookSource` treats source as offline if `now > LastCheckTime + (CheckInterval * GracePeriodMultiplier)` (default multiplier 2.5).
 
 **Initialization Order:**
 ```go
@@ -137,7 +141,7 @@ PUT /config/TELEGRAM_TOKEN
 - Config: key (string) → msgpack(ConfigEntry)
 
 **Critical: UpdateSourceStatus logic**
-When status changes, both `CurrentStatus` AND `LastChangeTime` must be updated atomically. The `LastCheckTime` is updated on every check regardless of status change.
+When status changes, both `CurrentStatus` AND `LastChangeTime` must be updated atomically. For ping/http, `LastCheckTime` is updated on every check. For webhook sources, `LastCheckTime` is updated only when an incoming request hits `/webhooks/incoming/:token` (heartbeat); the monitor uses it to decide if the source is still within the grace period.
 
 ### Telegram Commands
 
@@ -173,12 +177,13 @@ The application includes a modern React-based web dashboard for managing monitor
 
 **Source Management:**
 - View all monitoring sources in a table
-- Create new sources (ping or HTTP)
-- Edit existing sources (name, target, interval, type)
+- Create new sources (ping, HTTP, or incoming webhook)
+- Incoming webhook: unique URL per source; grace period multiplier (presets 1.1, 1.5, 2.0, 2.1, 2.5, 3.1, 4.1, 5, 10 or custom); optional expected headers (JSON) and expected body content
+- Edit existing sources (name, target, interval, type; for webhook: grace period, headers, content)
 - Delete sources with confirmation
 - Pause/resume monitoring per source
 - Real-time status indicators (online/offline/checking)
-- Last check timestamp display
+- Last check timestamp display (for webhook: last heartbeat received)
 
 **Configuration Management:**
 - View all application configuration
@@ -419,6 +424,7 @@ METRICS_RETENTION         # History retention (720h = 30 days)
 API_ENABLED               # Enable REST API (default: true)
 API_PORT                  # API server port (default: 8080)
 API_KEY                   # Required for API authentication
+WEBHOOK_BASE_URL          # Optional; set via dashboard Config so UI shows full webhook URLs (e.g. https://outagemonitor.example.com)
 
 # Auto-Restart
 AUTO_RESTART_ENABLED              # Enable auto-restart on failures (default: true)
@@ -439,13 +445,18 @@ Per-source check intervals override `DEFAULT_CHECK_INTERVAL`. Each source can ch
 {
   ID: "uuid",
   Name: "Home Power",
-  Type: "ping" | "http",
-  Target: "192.168.1.1" | "https://example.com",
+  Type: "ping" | "http" | "webhook",
+  Target: "192.168.1.1" | "https://example.com" | "" (empty for webhook),
   CheckInterval: 10s,
   CurrentStatus: 1,              // 1=online, 0=offline
-  LastCheckTime: timestamp,      // Last check attempt
+  LastCheckTime: timestamp,      // Last check attempt; for webhook = last heartbeat received
   LastChangeTime: timestamp,     // When status last changed
-  Enabled: true                  // Pause/resume flag
+  Enabled: true,                 // Pause/resume flag
+  // Webhook (incoming) only:
+  WebhookToken: "a3GFt2q",       // Unique token in URL
+  GracePeriodMultiplier: 2.5,    // Mark offline if no heartbeat in interval * this (default 2.5)
+  ExpectedHeaders: `{"X-Auth":"secret"}`,  // Optional JSON; request must match
+  ExpectedContent: "ok"          // Optional substring in body
 }
 ```
 
@@ -475,12 +486,14 @@ Per-source check intervals override `DEFAULT_CHECK_INTERVAL`. Each source can ch
 
 ### Authentication
 
-All endpoints (except `/health`) require API key authentication:
+All endpoints except `/health` and `/webhooks/incoming/:token` require API key authentication:
 ```bash
 curl -H "X-API-Key: your-secret-api-key" http://localhost:8080/config
 ```
 
 Generate secure API key: `openssl rand -hex 32`
+
+**Incoming webhook** (`GET` or `POST /webhooks/incoming/:token`) does not require API key; it is the public URL the monitored service calls to send heartbeats.
 
 ### Endpoints
 
@@ -543,6 +556,15 @@ Returns comprehensive information:
 - API server info
 - System uptime
 
+### Incoming Webhook (no auth)
+
+**GET /webhooks/incoming/:token** and **POST /webhooks/incoming/:token** - Receive heartbeat from monitored service
+- No `X-API-Key` required. Monitored service calls this URL (e.g. `https://outagemonitor.example.com/webhooks/incoming/a3GFt2q`) on a schedule.
+- If source has `expected_headers` (JSON object), request headers must match.
+- If source has `expected_content`, request body must contain that substring (POST body).
+- On success: updates source `LastCheckTime` and status 1 (online), returns `{"status":"ok"}`.
+- NGINX (or reverse proxy) should proxy `/webhooks/` to the API server so the public URL works.
+
 ### Source Management Endpoints
 
 **GET /sources** - List all monitoring sources
@@ -553,6 +575,7 @@ Returns array of all sources with current status, last check time, etc.
 
 **POST /sources** - Create new source
 ```bash
+# Ping or HTTP (target required)
 curl -X POST \
   -H "X-API-Key: key" \
   -H "Content-Type: application/json" \
@@ -563,11 +586,26 @@ curl -X POST \
     "check_interval": "30s"
   }' \
   http://localhost:8080/sources
+
+# Webhook (incoming): no target; server generates webhook_token
+curl -X POST \
+  -H "X-API-Key: key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Heartbeat Service",
+    "type": "webhook",
+    "check_interval": "60s",
+    "grace_period_multiplier": 2.5,
+    "expected_headers": "{\"X-Secret\": \"value\"}",
+    "expected_content": "ok"
+  }' \
+  http://localhost:8080/sources
 ```
-Creates source, saves to DB, and starts monitoring goroutine.
+Creates source, saves to DB, and starts monitoring goroutine. For `type: "webhook"`, response includes `webhook_token`; use URL `https://<host>/webhooks/incoming/<webhook_token>`.
 
 **PUT /sources/:id** - Update source
 ```bash
+# Ping/HTTP
 curl -X PUT \
   -H "X-API-Key: key" \
   -H "Content-Type: application/json" \
@@ -579,6 +617,8 @@ curl -X PUT \
     "enabled": true
   }' \
   http://localhost:8080/sources/{source-id}
+
+# Webhook: can update grace_period_multiplier, expected_headers, expected_content (target not used)
 ```
 Updates source, restarts monitoring goroutine if enabled.
 
@@ -696,8 +736,9 @@ curl -X PUT -H "X-API-Key: key" \
 
 1. Add case to `Monitor.CheckSource()` in `checker.go`
 2. Implement check method (returns `int`: 1=online, 0=offline)
-3. Update `/add_source` handler to validate new type
-4. No changes needed to storage or notification logic
+3. For outbound checks (ping/http): no callback. For inbound (e.g. webhook): expose HTTP handler, on request call `storage.UpdateSourceStatus` and `Monitor.RecordWebhookReceived` so the ticker sees updated `LastCheckTime`.
+4. Update source create/update API and (if applicable) `/add_source` handler to validate new type
+5. No changes needed to notification logic
 
 ### Modifying Notification Format
 
@@ -727,8 +768,9 @@ Config changes are saved to DB immediately and persist across restarts. The bot 
 1. Check logs for `[MONITOR]` prefix - shows check results
 2. Verify source is `Enabled=true` in DB
 3. For ping: confirm ICMP capabilities (`getcap bin/tg-monitor-bot`)
-4. Check goroutine is running: count should match enabled sources
-5. Verify chat associations exist in `source_chats` bucket
+4. For webhook: ensure monitored service is calling `GET` or `POST /webhooks/incoming/<token>`; check `LastCheckTime` in DB; verify grace period (interval * grace_period_multiplier) is sufficient
+5. Check goroutine is running: count should match enabled sources
+6. Verify chat associations exist in `source_chats` bucket
 
 ### Debugging REST API Issues
 

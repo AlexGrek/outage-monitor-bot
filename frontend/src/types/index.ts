@@ -88,7 +88,7 @@ export interface ReloadResponse {
 export interface Source {
   id: string
   name: string
-  type: 'ping' | 'http'
+  type: 'ping' | 'http' | 'webhook'
   target: string
   check_interval: number // nanoseconds
   current_status: number // 1=online, 0=offline, -1=unknown
@@ -96,21 +96,31 @@ export interface Source {
   last_change_time: string
   enabled: boolean
   created_at: string
+  webhook_token?: string
+  grace_period_multiplier?: number
+  expected_headers?: string
+  expected_content?: string
 }
 
 export interface CreateSourceRequest {
   name: string
-  type: 'ping' | 'http'
-  target: string
-  check_interval: string // e.g. "30s", "1m"
+  type: 'ping' | 'http' | 'webhook'
+  target?: string
+  check_interval: string
+  grace_period_multiplier?: number
+  expected_headers?: string
+  expected_content?: string
 }
 
 export interface UpdateSourceRequest {
   name: string
-  type: 'ping' | 'http'
-  target: string
+  type: 'ping' | 'http' | 'webhook'
+  target?: string
   check_interval: string
   enabled: boolean
+  grace_period_multiplier?: number
+  expected_headers?: string
+  expected_content?: string
 }
 
 export interface Webhook {

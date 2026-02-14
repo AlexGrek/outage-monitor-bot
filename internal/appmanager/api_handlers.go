@@ -2,6 +2,7 @@ package appmanager
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -9,6 +10,10 @@ import (
 
 // setupRoutes configures all API routes
 func (am *AppManager) setupRoutes() {
+	// Incoming webhook heartbeat (no API key) - must be registered before auth middleware applies
+	am.echoServer.GET("/webhooks/incoming/:token", am.handleIncomingWebhook)
+	am.echoServer.POST("/webhooks/incoming/:token", am.handleIncomingWebhook)
+
 	// Middleware
 	am.echoServer.Use(am.apiKeyMiddleware)
 
@@ -63,6 +68,10 @@ func (am *AppManager) apiKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Skip auth for health endpoint
 		if c.Path() == "/health" {
+			return next(c)
+		}
+		// Skip auth for incoming webhook heartbeat (public URL for monitored services)
+		if strings.HasPrefix(c.Path(), "/webhooks/incoming/") {
 			return next(c)
 		}
 

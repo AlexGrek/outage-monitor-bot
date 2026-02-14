@@ -355,6 +355,7 @@ function App() {
         {activeTab === 'sources' && (
           <SourcesPanel
             sources={sources}
+            config={config}
             onCreateSource={handleCreateSource}
             onUpdateSource={handleUpdateSource}
             onDeleteSource={handleDeleteSource}

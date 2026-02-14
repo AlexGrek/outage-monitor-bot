@@ -1,24 +1,26 @@
 # Outage Monitor Bot
 
-An automated monitoring system for infrastructure health checking via ICMP ping and HTTP/JSON endpoints, with multi-channel notifications and metrics stored in BoltDB.
+An automated monitoring system for infrastructure health checking via ICMP ping, HTTP/JSON endpoints, and incoming webhook heartbeats, with multi-channel notifications and metrics stored in BoltDB.
 
 ## Features
 
-- 🏓 **ICMP Ping Monitoring** - Check host availability with RTT metrics
-- 🌐 **HTTP/JSON Endpoint Checking** - Monitor web services and APIs
-- 💾 **Persistent Storage** - Metrics stored in BoltDB with msgpack encoding
-- 📊 **Historical Metrics** - Track monitoring history over time
-- 🔒 **User Authorization** - Optional whitelist for bot access
-- 📝 **Structured Logging** - Component-based logging with middleware
-- 🌐 **REST API** - Dynamic configuration and monitoring via HTTP (Echo v4)
-- 🖥️ **Web Dashboard** - Modern React 19 + TypeScript dashboard with Untitled UI
+- **ICMP Ping Monitoring** - Check host availability with RTT metrics
+- **HTTP/JSON Endpoint Checking** - Monitor web services and APIs
+- **Incoming Webhook** - Monitor services that push heartbeats to a unique URL; mark offline if no request within a configurable grace period (default 2.5x the expected interval)
+- **Persistent Storage** - Metrics stored in BoltDB with msgpack encoding
+- **Historical Metrics** - Track monitoring history over time
+- **User Authorization** - Optional whitelist for bot access
+- **Structured Logging** - Component-based logging with middleware
+- **REST API** - Dynamic configuration and monitoring via HTTP (Echo v4)
+- **Web Dashboard** - Modern React 19 + TypeScript dashboard with Untitled UI
   - Real-time health monitoring with auto-refresh
-  - Full source management (create, edit, delete, pause/resume)
+  - Full source management (create, edit, delete, pause/resume): ping, HTTP, and incoming webhook
+  - Incoming webhook: unique URL per source, configurable grace period (1.1x--10x or custom), optional header/body validation
   - Live configuration editing with validation
   - Web-only mode (works without Telegram token)
   - Responsive design with Tailwind CSS
-- 🔄 **Auto-Restart** - Self-healing with exponential backoff
-- ✅ **Comprehensive Testing** - API tests using Go's testing package
+- **Auto-Restart** - Self-healing with exponential backoff
+- **Comprehensive Testing** - API tests using Go's testing package
 
 ## Quick Start
 
@@ -185,7 +187,7 @@ make docker-stop
 - `/status` - Display monitoring status and statistics
 - `/ping <host>` - Ping a specific host
 - `/check <url>` - Check an HTTP endpoint
-- `/add_source <name> <type> <target> <interval> <chat_ids>` - Add monitoring source
+- `/add_source <name> <type> <target> <interval> <chat_ids>` - Add monitoring source (type: `ping` or `http`; for incoming webhook use dashboard or API)
 - `/remove_source <name>` - Remove monitoring source
 - `/pause <name>` - Pause notifications for a source
 - `/resume <name>` - Resume notifications for a source
@@ -203,12 +205,13 @@ The web dashboard provides a modern UI for managing monitoring sources and confi
 - Telegram connection status
 
 **Source Management:**
-- Create new monitoring sources (ping or HTTP)
-- Edit existing sources (name, target, interval, enabled state)
+- Create new monitoring sources (ping, HTTP, or incoming webhook)
+- Incoming webhook: get a unique URL (e.g. `https://your-host/webhooks/incoming/<token>`); configure expected heartbeat interval and grace-period multiplier (1.1, 1.5, 2.0, 2.5, 3.1, 4.1, 5, 10 or custom); optional expected headers (JSON) and body substring
+- Edit existing sources (name, target, interval, enabled state, and for webhook: grace period, headers, content)
 - Delete sources with confirmation dialog
 - Pause/resume monitoring per source
 - View real-time status (online/offline/checking)
-- Last check timestamp for each source
+- Last check timestamp for each source (for webhook: last heartbeat received)
 
 **Configuration Management:**
 - View all application settings
@@ -263,7 +266,7 @@ The application provides a comprehensive REST API for programmatic access to all
 
 ### Authentication
 
-All endpoints (except `/health`) require API key authentication via the `X-API-Key` header:
+All endpoints except `/health` and `/webhooks/incoming/:token` require API key authentication via the `X-API-Key` header:
 
 ```bash
 curl -H "X-API-Key: your-api-key" http://localhost:8080/status
@@ -295,6 +298,7 @@ curl -H "X-API-Key: key" http://localhost:8080/sources
 
 **Create Source:**
 ```bash
+# Ping or HTTP
 curl -X POST \
   -H "X-API-Key: key" \
   -H "Content-Type: application/json" \
@@ -305,7 +309,20 @@ curl -X POST \
     "check_interval": "30s"
   }' \
   http://localhost:8080/sources
+
+# Incoming webhook (no target; optional grace_period_multiplier, expected_headers, expected_content)
+curl -X POST \
+  -H "X-API-Key: key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Service Heartbeat",
+    "type": "webhook",
+    "check_interval": "60s",
+    "grace_period_multiplier": 2.5
+  }' \
+  http://localhost:8080/sources
 ```
+Response includes `webhook_token`; the service should send GET or POST to `https://<your-host>/webhooks/incoming/<webhook_token>` within each interval (or within grace period).
 
 **Update Configuration:**
 ```bash
@@ -320,6 +337,8 @@ curl -X PUT \
 ```bash
 curl -X POST -H "X-API-Key: key" http://localhost:8080/config/reload
 ```
+
+**Incoming webhook (no auth):** Monitored services send heartbeats to a unique URL. Create a source with `"type": "webhook"` via API or dashboard; the response includes `webhook_token`. Call `GET` or `POST https://<your-host>/webhooks/incoming/<webhook_token>` on your schedule. If no request is received within (expected interval x grace multiplier), the source is marked offline. Configure optional header/body validation and grace multiplier (default 2.5x) in the dashboard.
 
 For complete API documentation, see [CLAUDE.md](CLAUDE.md#rest-api).
 
@@ -344,6 +363,7 @@ All configuration is via environment variables (see `.env.example`):
 | `API_ENABLED` | Enable REST API | `true` |
 | `API_PORT` | API server port | `8080` |
 | `API_KEY` | API authentication key | auto-generated |
+| `WEBHOOK_BASE_URL` | Optional; set in dashboard Config to show full webhook URLs (e.g. `https://outagemonitor.example.com`) | *(none)* |
 | **Auto-Restart** | | |
 | `AUTO_RESTART_ENABLED` | Enable auto-restart on failures | `true` |
 | `AUTO_RESTART_DELAY` | Initial restart delay | `30s` |

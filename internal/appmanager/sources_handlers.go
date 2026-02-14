@@ -12,19 +12,25 @@ import (
 
 // CreateSourceRequest is the request body for creating a source
 type CreateSourceRequest struct {
-	Name          string `json:"name"`
-	Type          string `json:"type"`           // "ping" or "http"
-	Target        string `json:"target"`
-	CheckInterval string `json:"check_interval"` // e.g. "30s", "1m"
+	Name                   string   `json:"name"`
+	Type                   string   `json:"type"` // "ping", "http", or "webhook"
+	Target                 string   `json:"target"`
+	CheckInterval          string   `json:"check_interval"` // e.g. "30s", "1m"
+	GracePeriodMultiplier  *float64 `json:"grace_period_multiplier,omitempty"` // webhook: default 2.5
+	ExpectedHeaders        string   `json:"expected_headers,omitempty"`       // webhook: JSON {"Header":"value"}
+	ExpectedContent        string   `json:"expected_content,omitempty"`       // webhook: substring in body
 }
 
 // UpdateSourceRequest is the request body for updating a source
 type UpdateSourceRequest struct {
-	Name          string `json:"name"`
-	Type          string `json:"type"`
-	Target        string `json:"target"`
-	CheckInterval string `json:"check_interval"`
-	Enabled       bool   `json:"enabled"`
+	Name                   string   `json:"name"`
+	Type                   string   `json:"type"`
+	Target                 string   `json:"target"`
+	CheckInterval          string   `json:"check_interval"`
+	Enabled                bool     `json:"enabled"`
+	GracePeriodMultiplier  *float64 `json:"grace_period_multiplier,omitempty"`
+	ExpectedHeaders        string   `json:"expected_headers,omitempty"`
+	ExpectedContent        string   `json:"expected_content,omitempty"`
 }
 
 // handleGetSources returns all sources
@@ -66,14 +72,14 @@ func (am *AppManager) handleCreateSource(c echo.Context) error {
 			"error": "Name is required",
 		})
 	}
-	if req.Type != "ping" && req.Type != "http" {
+	if req.Type != "ping" && req.Type != "http" && req.Type != "webhook" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Type must be 'ping' or 'http'",
+			"error": "Type must be 'ping', 'http', or 'webhook'",
 		})
 	}
-	if req.Target == "" {
+	if req.Type != "webhook" && req.Target == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Target is required",
+			"error": "Target is required for ping and http sources",
 		})
 	}
 
@@ -85,18 +91,40 @@ func (am *AppManager) handleCreateSource(c echo.Context) error {
 		})
 	}
 
-	// Create source
+	graceMult := 2.5
+	if req.GracePeriodMultiplier != nil {
+		graceMult = *req.GracePeriodMultiplier
+		if graceMult < 1.0 || graceMult > 100 {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "grace_period_multiplier must be between 1.0 and 100",
+			})
+		}
+	}
+
 	source := &storage.Source{
-		ID:             uuid.New().String(),
-		Name:           req.Name,
-		Type:           req.Type,
-		Target:         req.Target,
-		CheckInterval:  checkInterval,
-		CurrentStatus:  -1, // Unknown initially
-		Enabled:        true,
-		CreatedAt:      time.Now(),
-		LastCheckTime:  time.Time{},
-		LastChangeTime: time.Time{},
+		ID:                    uuid.New().String(),
+		Name:                  req.Name,
+		Type:                  req.Type,
+		Target:                req.Target,
+		CheckInterval:         checkInterval,
+		CurrentStatus:         -1,
+		Enabled:               true,
+		CreatedAt:             time.Now(),
+		LastCheckTime:         time.Time{},
+		LastChangeTime:        time.Time{},
+		GracePeriodMultiplier: graceMult,
+		ExpectedHeaders:       req.ExpectedHeaders,
+		ExpectedContent:       req.ExpectedContent,
+	}
+
+	if req.Type == "webhook" {
+		token, err := am.generateWebhookToken()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Failed to generate webhook token: " + err.Error(),
+			})
+		}
+		source.WebhookToken = token
 	}
 
 	// Save to database
@@ -145,14 +173,14 @@ func (am *AppManager) handleUpdateSource(c echo.Context) error {
 			"error": "Name is required",
 		})
 	}
-	if req.Type != "ping" && req.Type != "http" {
+	if req.Type != "ping" && req.Type != "http" && req.Type != "webhook" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Type must be 'ping' or 'http'",
+			"error": "Type must be 'ping', 'http', or 'webhook'",
 		})
 	}
-	if req.Target == "" {
+	if req.Type != "webhook" && req.Target == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Target is required",
+			"error": "Target is required for ping and http sources",
 		})
 	}
 
@@ -164,10 +192,26 @@ func (am *AppManager) handleUpdateSource(c echo.Context) error {
 		})
 	}
 
+	if req.Type == "webhook" && req.GracePeriodMultiplier != nil {
+		mult := *req.GracePeriodMultiplier
+		if mult < 1.0 || mult > 100 {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "grace_period_multiplier must be between 1.0 and 100",
+			})
+		}
+		source.GracePeriodMultiplier = mult
+	}
+	if req.Type == "webhook" {
+		source.ExpectedHeaders = req.ExpectedHeaders
+		source.ExpectedContent = req.ExpectedContent
+	}
+
 	// Update source
 	source.Name = req.Name
 	source.Type = req.Type
-	source.Target = req.Target
+	if req.Type != "webhook" {
+		source.Target = req.Target
+	}
 	source.CheckInterval = checkInterval
 	source.Enabled = req.Enabled
 
