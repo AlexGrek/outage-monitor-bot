@@ -10,12 +10,12 @@ interface StatusCardProps {
 
 export function StatusCard({ title, value, description, icon, trend }: StatusCardProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-2xl font-semibold text-gray-900">{value}</p>
+            <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{value}</p>
             {trend && (
               <span
                 className={`text-sm font-medium ${
@@ -23,17 +23,17 @@ export function StatusCard({ title, value, description, icon, trend }: StatusCar
                     ? 'text-success-600'
                     : trend === 'down'
                     ? 'text-error-600'
-                    : 'text-gray-500'
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
                 {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '−'}
               </span>
             )}
           </div>
-          {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
+          {description && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>}
         </div>
         {icon && (
-          <div className="flex-shrink-0 w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600">
+          <div className="flex-shrink-0 w-10 h-10 bg-primary-50 dark:bg-primary-900/30 rounded-lg flex items-center justify-center text-primary-600">
             {icon}
           </div>
         )}

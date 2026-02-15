@@ -24,9 +24,9 @@ export function Toast({ toast, onClose }: ToastProps) {
   }, [toast.id, onClose])
 
   const bgColor = {
-    success: 'bg-success-50 border-success-200',
-    error: 'bg-error-50 border-error-200',
-    info: 'bg-primary-50 border-primary-200',
+    success: 'bg-success-50 dark:bg-success-900/30 border-success-200 dark:border-success-700',
+    error: 'bg-error-50 dark:bg-error-900/30 border-error-200 dark:border-error-700',
+    info: 'bg-primary-50 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700',
   }[toast.type]
 
   const iconColor = {
@@ -71,14 +71,14 @@ export function Toast({ toast, onClose }: ToastProps) {
     >
       <div className={iconColor}>{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900">{toast.title}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{toast.title}</p>
         {toast.message && (
-          <p className="text-sm text-gray-600 mt-1">{toast.message}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{toast.message}</p>
         )}
       </div>
       <button
         onClick={() => onClose(toast.id)}
-        className="text-gray-400 hover:text-gray-600 transition-colors"
+        className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
       >
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
           <path

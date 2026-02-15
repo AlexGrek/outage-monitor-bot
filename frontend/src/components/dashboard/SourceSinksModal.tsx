@@ -113,24 +113,24 @@ export function SourceSinksModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full">
+        <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Configure Sinks for "{source.name}"
           </h2>
         </div>
 
         <div className="px-6 py-4 max-h-96 overflow-y-auto">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mb-4 p-3 bg-error-50 dark:bg-error-900/30 border border-error-200 dark:border-error-700 rounded-md">
+              <p className="text-sm text-error-700 dark:text-error-400">{error}</p>
             </div>
           )}
 
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse h-8 bg-gray-200 rounded"></div>
+                <div key={i} className="animate-pulse h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
               ))}
             </div>
           ) : (
@@ -138,12 +138,12 @@ export function SourceSinksModal({
               {/* Webhooks Section */}
               {webhooks.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Webhooks</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Webhooks</h3>
                   <div className="space-y-2">
                     {webhooks.map((webhook) => (
                       <label
                         key={webhook.id}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -153,10 +153,10 @@ export function SourceSinksModal({
                           className="w-4 h-4 text-primary-600 rounded"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 truncate">
+                          <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
                             {webhook.name ? webhook.name : webhook.url}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {webhook.name && webhook.url ? `${webhook.url} · ` : ''}
                             {webhook.method} {webhook.enabled ? 'OK' : '(disabled)'}
                           </p>
@@ -170,12 +170,12 @@ export function SourceSinksModal({
               {/* Telegram Chats Section */}
               {telegramChats.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Telegram Chats</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Telegram Chats</h3>
                   <div className="space-y-2">
                     {telegramChats.map((chat) => (
                       <label
                         key={chat.chat_id}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -185,10 +185,10 @@ export function SourceSinksModal({
                           className="w-4 h-4 text-primary-600 rounded"
                         />
                         <div className="flex-1">
-                          <p className="text-sm text-gray-900">
+                          <p className="text-sm text-gray-900 dark:text-gray-100">
                             {chat.name ? chat.name : `Chat ${chat.chat_id}`}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             ID: {chat.chat_id}
                             {chat.created_at
                               ? ` · Added ${new Date(chat.created_at).toLocaleDateString()}`
@@ -202,7 +202,7 @@ export function SourceSinksModal({
               )}
 
               {webhooks.length === 0 && telegramChats.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                   No sinks available. Create webhooks or telegram chats first.
                 </p>
               )}
@@ -210,10 +210,10 @@ export function SourceSinksModal({
           )}
         </div>
 
-        <div className="border-t border-gray-200 px-6 py-4 flex gap-2 justify-end">
+        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex gap-2 justify-end">
           <button
             onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Done
           </button>

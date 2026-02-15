@@ -28,6 +28,8 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
   const [chatNameInput, setChatNameInput] = useState('')
   const [submittingChat, setSubmittingChat] = useState(false)
 
+  const inputClasses = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+
   const loadData = useCallback(async () => {
     try {
       setError(null)
@@ -150,8 +152,8 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
 
   if (!api.getApiKey()) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <p className="text-gray-500">Authenticate to manage sinks</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <p className="text-gray-500 dark:text-gray-400">Authenticate to manage sinks</p>
       </div>
     )
   }
@@ -159,17 +161,17 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="bg-error-50 border border-error-200 rounded-lg p-4">
-          <p className="text-sm text-error-700">{error}</p>
+        <div className="bg-error-50 dark:bg-error-900/30 border border-error-200 dark:border-error-700 rounded-lg p-4">
+          <p className="text-sm text-error-700 dark:text-error-400">{error}</p>
         </div>
       )}
 
       {/* Telegram Chats Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Telegram Chats</h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Telegram Chats</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Manage Telegram chat destinations
             </p>
           </div>
@@ -184,10 +186,10 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
         </div>
 
         {showChatForm && (
-          <form onSubmit={handleAddChat} className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <form onSubmit={handleAddChat} className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Name
                 </label>
                 <input
@@ -195,11 +197,11 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                   value={chatNameInput}
                   onChange={(e) => setChatNameInput(e.target.value)}
                   placeholder="e.g. Team Alerts"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  className={inputClasses}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Chat ID
                 </label>
                 <input
@@ -207,7 +209,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                   value={chatIdInput}
                   onChange={(e) => setChatIdInput(e.target.value)}
                   placeholder="Enter Telegram chat ID"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  className={inputClasses}
                   required
                 />
               </div>
@@ -222,7 +224,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                 <button
                   type="button"
                   onClick={() => setShowChatForm(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
@@ -233,18 +235,18 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
 
         <div className="space-y-2">
           {telegramChats.length === 0 ? (
-            <p className="text-sm text-gray-500">No chats configured</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No chats configured</p>
           ) : (
             telegramChats.map((chat) => (
               <div
                 key={chat.chat_id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {chat.name ? chat.name : `Chat ${chat.chat_id}`}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     ID: {chat.chat_id}
                     {chat.created_at
                       ? ` · Added ${new Date(chat.created_at).toLocaleDateString()}`
@@ -272,11 +274,11 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
       </div>
 
       {/* Webhooks Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Webhooks</h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Webhooks</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Configure HTTP webhooks for status change notifications
             </p>
           </div>
@@ -291,10 +293,10 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
         </div>
 
         {showWebhookForm && (
-          <form onSubmit={handleCreateWebhook} className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <form onSubmit={handleCreateWebhook} className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Name
                 </label>
                 <input
@@ -304,11 +306,11 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                     setWebhookForm({ ...webhookForm, name: e.target.value })
                   }
                   placeholder="e.g. Slack Alerts"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  className={inputClasses}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   URL
                 </label>
                 <input
@@ -318,13 +320,13 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                     setWebhookForm({ ...webhookForm, url: e.target.value })
                   }
                   placeholder="https://example.com/webhook"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  className={inputClasses}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   HTTP Method
                 </label>
                 <select
@@ -335,7 +337,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                       method: e.target.value as 'GET' | 'POST' | 'PUT',
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  className={inputClasses}
                 >
                   <option value="GET">GET</option>
                   <option value="POST">POST</option>
@@ -344,7 +346,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Headers (JSON) - Optional
                 </label>
                 <textarea
@@ -365,7 +367,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                   }}
                   placeholder='{"Authorization": "Bearer token"}'
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 font-mono text-sm"
+                  className={`${inputClasses} font-mono text-sm`}
                 />
               </div>
 
@@ -377,9 +379,9 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                   onChange={(e) =>
                     setWebhookForm({ ...webhookForm, enabled: e.target.checked })
                   }
-                  className="rounded border-gray-300"
+                  className="rounded border-gray-300 dark:border-gray-600"
                 />
-                <label htmlFor="webhook-enabled" className="text-sm text-gray-700">
+                <label htmlFor="webhook-enabled" className="text-sm text-gray-700 dark:text-gray-300">
                   Enabled
                 </label>
               </div>
@@ -395,7 +397,7 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                 <button
                   type="button"
                   onClick={() => setShowWebhookForm(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
@@ -406,32 +408,32 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
 
         <div className="space-y-2">
           {webhooks.length === 0 ? (
-            <p className="text-sm text-gray-500">No webhooks configured</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No webhooks configured</p>
           ) : (
             webhooks.map((webhook) => (
               <div
                 key={webhook.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {webhook.name ? webhook.name : webhook.url}
                     </p>
-                    <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
+                    <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                       {webhook.method}
                     </span>
                     {webhook.enabled ? (
-                      <span className="text-xs px-2 py-1 bg-success-100 text-success-700 rounded">
+                      <span className="text-xs px-2 py-1 bg-success-100 dark:bg-success-900/40 text-success-700 dark:text-success-500 rounded">
                         Enabled
                       </span>
                     ) : (
-                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                      <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                         Disabled
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {webhook.name && webhook.url ? `${webhook.url} · ` : ''}
                     Created {new Date(webhook.created_at).toLocaleDateString()}
                     {webhook.last_triggered &&

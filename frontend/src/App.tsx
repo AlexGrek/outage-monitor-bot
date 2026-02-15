@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from './lib/api'
+import { useTheme } from './hooks/useTheme'
+import { ThemeToggle } from './components/dashboard/ThemeToggle'
 import { HealthBadge } from './components/dashboard/HealthBadge'
 import { StatusCard } from './components/dashboard/StatusCard'
 import { ConfigPanel } from './components/dashboard/ConfigPanel'
@@ -20,6 +22,7 @@ import type {
 } from './types'
 
 function App() {
+  useTheme()
   const [activeTab, setActiveTab] = useState<TabId>('status')
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [health, setHealth] = useState<HealthResponse | null>(null)
@@ -163,25 +166,26 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <ApiKeyModal isOpen={showApiKeyModal} onClose={handleApiKeySubmit} />
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 Outage Monitor Bot
               </h1>
               <HealthBadge health={health} isLoading={loading} />
             </div>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <button
                 onClick={loadData}
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
               >
                 {loading ? 'Refreshing...' : 'Refresh'}
               </button>
@@ -194,7 +198,7 @@ function App() {
               </button>
               <button
                 onClick={handleClearApiKey}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Change API Key
               </button>
@@ -209,8 +213,8 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
-          <div className="mb-6 bg-error-50 border border-error-200 rounded-lg p-4">
-            <p className="text-sm text-error-700">
+          <div className="mb-6 bg-error-50 dark:bg-error-900/30 border border-error-200 dark:border-error-700 rounded-lg p-4">
+            <p className="text-sm text-error-700 dark:text-error-400">
               <strong>Error:</strong> {error}
             </p>
           </div>
@@ -245,7 +249,7 @@ function App() {
                   health?.telegram_connected ? (
                     <span className="text-success-600">Connected</span>
                   ) : status?.bot.web_only_mode ? (
-                    <span className="text-gray-500">Not Configured</span>
+                    <span className="text-gray-500 dark:text-gray-400">Not Configured</span>
                   ) : (
                     <span className="text-error-600">Disconnected</span>
                   )
@@ -298,26 +302,26 @@ function App() {
                 )}
 
                 {/* Bot Details */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Bot Details</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Bot Details</h3>
                   <div className="space-y-3">
                     {status?.bot.started_at && (
                       <div>
-                        <p className="text-xs text-gray-500">Started At</p>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Started At</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {new Date(status.bot.started_at).toLocaleString()}
                         </p>
                       </div>
                     )}
                     {status?.bot.uptime && (
                       <div>
-                        <p className="text-xs text-gray-500">Uptime</p>
-                        <p className="text-sm font-medium text-gray-900">{status.bot.uptime}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Uptime</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{status.bot.uptime}</p>
                       </div>
                     )}
                     {status?.bot.last_error && (
                       <div>
-                        <p className="text-xs text-gray-500">Last Error</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Last Error</p>
                         <p className="text-sm font-medium text-error-600">
                           {status.bot.last_error}
                         </p>
@@ -328,18 +332,18 @@ function App() {
 
                 {/* System Info */}
                 {status?.system && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">System Info</h3>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">System Info</h3>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs text-gray-500">Started At</p>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Started At</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {new Date(status.system.started_at).toLocaleString()}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Total Uptime</p>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Total Uptime</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {formatUptime(status.system.uptime_seconds)}
                         </p>
                       </div>

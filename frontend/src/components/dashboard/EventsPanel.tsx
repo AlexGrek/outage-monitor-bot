@@ -61,27 +61,27 @@ export function EventsPanel({ sources = null }: EventsPanelProps) {
 
   if (!api.getApiKey()) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <p className="text-gray-500">Authenticate to view events</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <p className="text-gray-500 dark:text-gray-400">Authenticate to view events</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Change Timeline</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Status Change Timeline</h3>
 
         {/* Filter by source */}
         {sources && sources.length > 0 && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Filter by Source
             </label>
             <select
               value={selectedSourceId || ''}
               onChange={(e) => setSelectedSourceId(e.target.value || undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="">All Sources</option>
               {sources.map((source) => (
@@ -94,8 +94,8 @@ export function EventsPanel({ sources = null }: EventsPanelProps) {
         )}
 
         {error && (
-          <div className="bg-error-50 border border-error-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-error-700">{error}</p>
+          <div className="bg-error-50 dark:bg-error-900/30 border border-error-200 dark:border-error-700 rounded-lg p-4 mb-4">
+            <p className="text-sm text-error-700 dark:text-error-400">{error}</p>
           </div>
         )}
       </div>
@@ -104,18 +104,18 @@ export function EventsPanel({ sources = null }: EventsPanelProps) {
       <div className="space-y-3">
         {loading ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">Loading events...</p>
+            <p className="text-gray-500 dark:text-gray-400">Loading events...</p>
           </div>
         ) : events.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">No status changes recorded</p>
+            <p className="text-gray-500 dark:text-gray-400">No status changes recorded</p>
           </div>
         ) : (
           events.map((event) => {
             const isOnline = event.new_status === 1
-            const bgColor = isOnline ? 'bg-success-50' : 'bg-error-50'
-            const borderColor = isOnline ? 'border-success-200' : 'border-error-200'
-            const textColor = isOnline ? 'text-success-700' : 'text-error-700'
+            const bgColor = isOnline ? 'bg-success-50 dark:bg-success-900/30' : 'bg-error-50 dark:bg-error-900/30'
+            const borderColor = isOnline ? 'border-success-200 dark:border-success-700' : 'border-error-200 dark:border-error-700'
+            const textColor = isOnline ? 'text-success-700 dark:text-success-500' : 'text-error-700 dark:text-error-500'
 
             return (
               <div
@@ -125,24 +125,24 @@ export function EventsPanel({ sources = null }: EventsPanelProps) {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold text-gray-900">{event.source_name}</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100">{event.source_name}</h4>
                       <span className={`text-lg ${textColor}`}>
                         {getStatusEmoji(event.old_status)} →{' '}
                         {getStatusEmoji(event.new_status)}
                       </span>
                     </div>
 
-                    <div className="text-sm text-gray-700 mb-2">
+                    <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                       {isOnline ? '🟢 Restored' : '🔴 Outage Detected'}
                       {event.duration_ms > 0 && (
-                        <span className="ml-2 text-gray-600">
+                        <span className="ml-2 text-gray-600 dark:text-gray-400">
                           (was {isOnline ? 'offline' : 'online'} for{' '}
                           {formatDuration(event.duration_ms)})
                         </span>
                       )}
                     </div>
 
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {new Date(event.timestamp).toLocaleString()}
                     </p>
                   </div>
