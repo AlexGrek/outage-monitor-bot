@@ -237,8 +237,10 @@ func (m *Monitor) checkWebhookSource(source *storage.Source) int {
 	return 1
 }
 
-// RecordWebhookReceived updates the in-memory source after an incoming webhook heartbeat.
+// RecordWebhookReceived updates the in-memory LastCheckTime after an incoming webhook heartbeat.
 // Call this after persisting via storage.UpdateSourceStatus so the next tick uses the new LastCheckTime.
+// NOTE: CurrentStatus is intentionally NOT updated here; the next monitorSource tick will detect
+// the 0→1 transition and fire the "back online" notification through the normal status-change path.
 func (m *Monitor) RecordWebhookReceived(sourceID string, receivedAt time.Time) {
 	m.sourcesMu.Lock()
 	defer m.sourcesMu.Unlock()
@@ -247,7 +249,6 @@ func (m *Monitor) RecordWebhookReceived(sourceID string, receivedAt time.Time) {
 		return
 	}
 	source.LastCheckTime = receivedAt
-	source.CurrentStatus = 1
 	m.sources[sourceID] = source
 }
 
@@ -310,9 +311,17 @@ func (m *Monitor) performCheck(source *storage.Source) {
 			m.logger.Printf("Failed to save status change: %v", err)
 		}
 
-		// Update source status in database
-		if err := m.storage.UpdateSourceStatus(source.ID, newStatus, checkTime); err != nil {
-			m.logger.Printf("Failed to update source status: %v", err)
+		// Update source status in database.
+		// For webhook sources, use UpdateSourceCurrentStatus to preserve LastCheckTime
+		// (which tracks the last heartbeat received, not the monitor tick time).
+		if source.Type == "webhook" {
+			if err := m.storage.UpdateSourceCurrentStatus(source.ID, newStatus, checkTime); err != nil {
+				m.logger.Printf("Failed to update source status: %v", err)
+			}
+		} else {
+			if err := m.storage.UpdateSourceStatus(source.ID, newStatus, checkTime); err != nil {
+				m.logger.Printf("Failed to update source status: %v", err)
+			}
 		}
 
 		// Update in-memory source
@@ -328,8 +337,10 @@ func (m *Monitor) performCheck(source *storage.Source) {
 		if m.onStatusChange != nil {
 			go m.onStatusChange(source, change)
 		}
-	} else {
-		// No status change, just update check time in database
+	} else if source.Type != "webhook" {
+		// No status change: update check time in database for ping/http sources.
+		// For webhook sources, LastCheckTime is managed exclusively by the heartbeat handler
+		// (handleIncomingWebhook → UpdateSourceStatus), so we must not overwrite it here.
 		if err := m.storage.UpdateSourceStatus(source.ID, source.CurrentStatus, checkTime); err != nil {
 			m.logger.Printf("Failed to update check time: %v", err)
 		}

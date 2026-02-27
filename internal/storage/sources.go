@@ -246,6 +246,41 @@ func (b *BoltDB) UpdateSourceStatus(id string, status int, checkTime time.Time) 
 	})
 }
 
+// UpdateSourceCurrentStatus updates only CurrentStatus and LastChangeTime without touching LastCheckTime.
+// Use for webhook sources where LastCheckTime tracks the last heartbeat received, not the last monitor tick.
+func (b *BoltDB) UpdateSourceCurrentStatus(id string, status int, changeTime time.Time) error {
+	return b.db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(sourcesBucket))
+		if bucket == nil {
+			return fmt.Errorf("sources bucket not found")
+		}
+
+		data := bucket.Get([]byte(id))
+		if data == nil {
+			return fmt.Errorf("source not found")
+		}
+
+		var source Source
+		if err := msgpack.Unmarshal(data, &source); err != nil {
+			return fmt.Errorf("failed to unmarshal source: %w", err)
+		}
+
+		oldStatus := source.CurrentStatus
+		source.CurrentStatus = status
+		if status != oldStatus {
+			source.LastChangeTime = changeTime
+		}
+		// LastCheckTime is intentionally not updated here
+
+		newData, err := msgpack.Marshal(&source)
+		if err != nil {
+			return fmt.Errorf("failed to marshal source: %w", err)
+		}
+
+		return bucket.Put([]byte(id), newData)
+	})
+}
+
 // UpdateSource updates an entire source
 func (b *BoltDB) UpdateSource(source *Source) error {
 	data, err := msgpack.Marshal(source)
