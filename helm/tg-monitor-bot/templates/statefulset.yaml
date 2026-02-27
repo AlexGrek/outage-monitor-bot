@@ -73,7 +73,7 @@ spec:
     - metadata:
         name: data
         labels:
-          {{- include "tg-monitor-bot.labels" . | nindent 10 }}
+          {{- include "tg-monitor-bot.selectorLabels" . | nindent 10 }}
       spec:
         accessModes:
           - {{ .Values.persistence.accessMode }}
