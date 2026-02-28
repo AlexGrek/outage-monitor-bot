@@ -8,6 +8,7 @@ export interface HealthResponse {
   uptime: string
   uptime_seconds: number
   last_error?: string
+  version?: string
 }
 
 export interface AutoRestartInfo {

@@ -10,6 +10,9 @@ import (
 	"tg-monitor-bot/internal/storage"
 )
 
+// Version is injected at build time via -ldflags "-X main.Version=x.y.z"
+var Version = "dev"
+
 func main() {
 	log.Println("🤖 Starting Outage Monitor Bot with AppManager...")
 
@@ -21,7 +24,7 @@ func main() {
 	defer db.Close()
 
 	// Create AppManager
-	manager := appmanager.New(db)
+	manager := appmanager.New(db, Version)
 
 	// Start AppManager (ConfigManager + Echo API + Bot)
 	if err := manager.Start(); err != nil {

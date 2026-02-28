@@ -560,28 +560,33 @@ func (b *Bot) handleResume(ctx context.Context, tgBot *bot.Bot, update *models.U
 func (b *Bot) formatStatusChangeMessage(source *storage.Source, change *storage.StatusChange) string {
 	duration := time.Duration(change.DurationMs) * time.Millisecond
 
+	checkType := source.Type
+	if source.Target != "" {
+		checkType = fmt.Sprintf("%s (%s)", source.Type, source.Target)
+	}
+
 	if change.NewStatus == 1 {
 		// Restored (OFFLINE → ONLINE)
-		return fmt.Sprintf("🟢 *RESTORED*\n"+
-			"%s is now *ONLINE*\n\n"+
+		return fmt.Sprintf("🟢 <b>RESTORED</b>\n"+
+			"%s is now <b>ONLINE</b>\n\n"+
 			"Downtime: %v\n"+
-			"Check type: %s (%s)\n"+
+			"Check type: %s\n"+
 			"Time: %s",
 			source.Name,
 			formatDuration(duration),
-			source.Type, source.Target,
+			checkType,
 			change.Timestamp.Format("2006-01-02 15:04:05"))
 	}
 
 	// Outage (ONLINE → OFFLINE)
-	return fmt.Sprintf("🔴 *OUTAGE DETECTED*\n"+
-		"%s is now *OFFLINE*\n\n"+
-		"Last online: %v ago\n"+
-		"Check type: %s (%s)\n"+
+	return fmt.Sprintf("🔴 <b>OUTAGE DETECTED</b>\n"+
+		"%s is now <b>OFFLINE</b>\n\n"+
+		"Was online for: %v\n"+
+		"Check type: %s\n"+
 		"Time: %s",
 		source.Name,
 		formatDuration(duration),
-		source.Type, source.Target,
+		checkType,
 		change.Timestamp.Format("2006-01-02 15:04:05"))
 }
 

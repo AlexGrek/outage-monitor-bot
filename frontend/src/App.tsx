@@ -175,9 +175,16 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Outage Monitor Bot
-              </h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  Outage Monitor Bot
+                </h1>
+                {health?.version && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    v{health.version}
+                  </span>
+                )}
+              </div>
               <HealthBadge health={health} isLoading={loading} />
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">

@@ -25,14 +25,16 @@ type AppManager struct {
 	apiEnabled    bool
 	startTime     time.Time
 	logger        *log.Logger
+	version       string
 }
 
 // New creates a new AppManager
-func New(db *storage.BoltDB) *AppManager {
+func New(db *storage.BoltDB, version string) *AppManager {
 	return &AppManager{
 		storage:    db,
 		startTime:  time.Now(),
 		logger:     log.New(log.Writer(), "[APPMANAGER] ", log.LstdFlags),
+		version:    version,
 	}
 }
 

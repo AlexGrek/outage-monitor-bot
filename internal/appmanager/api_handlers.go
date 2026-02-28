@@ -238,6 +238,7 @@ func (am *AppManager) handleHealth(c echo.Context) error {
 		"api_running":        true,
 		"uptime":             uptime.String(),
 		"uptime_seconds":     int(uptime.Seconds()),
+		"version":            am.version,
 	}
 
 	if lastError != nil {

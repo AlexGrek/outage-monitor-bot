@@ -160,8 +160,9 @@ func (b *Bot) OnStatusChange(source *storage.Source, change *storage.StatusChang
 	// Send to all configured chats
 	for _, chatID := range chatIDs {
 		_, err := b.bot.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID: chatID,
-			Text:   message,
+			ChatID:    chatID,
+			Text:      message,
+			ParseMode: models.ParseModeHTML,
 		})
 		if err != nil {
 			b.logger.Printf("Failed to send notification to chat %d: %v", chatID, err)
