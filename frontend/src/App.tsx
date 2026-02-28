@@ -180,27 +180,27 @@ function App() {
               </h1>
               <HealthBadge health={health} isLoading={loading} />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <ThemeToggle />
               <button
                 onClick={loadData}
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                className="px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
               >
                 {loading ? 'Refreshing...' : 'Refresh'}
               </button>
               <button
                 onClick={handleReload}
                 disabled={reloading || !api.getApiKey()}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50"
+                className="px-3 py-2 text-xs sm:text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
                 {reloading ? 'Reloading...' : 'Reload Bot'}
               </button>
               <button
                 onClick={handleClearApiKey}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                Change API Key
+                <span className="hidden sm:inline">Change </span>API Key
               </button>
             </div>
           </div>

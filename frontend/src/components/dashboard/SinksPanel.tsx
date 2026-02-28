@@ -240,10 +240,10 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
             telegramChats.map((chat) => (
               <div
                 key={chat.chat_id}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg gap-2"
               >
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                     {chat.name ? chat.name : `Chat ${chat.chat_id}`}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -253,16 +253,16 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
                       : ''}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 shrink-0">
                   <button
                     onClick={() => handleTestTelegramChat(chat.chat_id)}
-                    className="px-3 py-1 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    className="px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-md"
                   >
                     Test
                   </button>
                   <button
                     onClick={() => handleRemoveChat(chat.chat_id, chat.name)}
-                    className="px-3 py-1 text-sm text-error-600 hover:text-error-700 font-medium"
+                    className="px-3 py-1.5 text-xs font-medium text-error-600 hover:text-error-700 hover:bg-error-50 dark:hover:bg-error-900/30 rounded-md"
                   >
                     Remove
                   </button>
@@ -413,44 +413,44 @@ export function SinksPanel({ onToast }: SinksPanelProps) {
             webhooks.map((webhook) => (
               <div
                 key={webhook.id}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg gap-2"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {webhook.name ? webhook.name : webhook.url}
                     </p>
-                    <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                    <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded shrink-0">
                       {webhook.method}
                     </span>
                     {webhook.enabled ? (
-                      <span className="text-xs px-2 py-1 bg-success-100 dark:bg-success-900/40 text-success-700 dark:text-success-500 rounded">
+                      <span className="text-xs px-2 py-1 bg-success-100 dark:bg-success-900/40 text-success-700 dark:text-success-500 rounded shrink-0">
                         Enabled
                       </span>
                     ) : (
-                      <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                      <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded shrink-0">
                         Disabled
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                     {webhook.name && webhook.url ? `${webhook.url} · ` : ''}
                     Created {new Date(webhook.created_at).toLocaleDateString()}
                     {webhook.last_triggered &&
                       ` • Last triggered ${new Date(webhook.last_triggered).toLocaleTimeString()}`}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 shrink-0">
                   <button
                     onClick={() => handleTestWebhook(webhook.id, webhook.url)}
                     disabled={!webhook.enabled}
-                    className="px-3 py-1 text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Test
                   </button>
                   <button
                     onClick={() => handleDeleteWebhook(webhook.id)}
-                    className="px-3 py-1 text-sm text-error-600 hover:text-error-700 font-medium"
+                    className="px-3 py-1.5 text-xs font-medium text-error-600 hover:text-error-700 hover:bg-error-50 dark:hover:bg-error-900/30 rounded-md"
                   >
                     Delete
                   </button>

@@ -120,7 +120,7 @@ export function SourceSinksModal({
           </h2>
         </div>
 
-        <div className="px-6 py-4 max-h-96 overflow-y-auto">
+        <div className="px-6 py-4 max-h-[60vh] sm:max-h-96 overflow-y-auto">
           {error && (
             <div className="mb-4 p-3 bg-error-50 dark:bg-error-900/30 border border-error-200 dark:border-error-700 rounded-md">
               <p className="text-sm text-error-700 dark:text-error-400">{error}</p>
@@ -143,7 +143,7 @@ export function SourceSinksModal({
                     {webhooks.map((webhook) => (
                       <label
                         key={webhook.id}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                        className="flex items-center gap-3 p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -175,7 +175,7 @@ export function SourceSinksModal({
                     {telegramChats.map((chat) => (
                       <label
                         key={chat.chat_id}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                        className="flex items-center gap-3 p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -184,8 +184,8 @@ export function SourceSinksModal({
                           disabled={updating}
                           className="w-4 h-4 text-primary-600 rounded"
                         />
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-900 dark:text-gray-100">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
                             {chat.name ? chat.name : `Chat ${chat.chat_id}`}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">

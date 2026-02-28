@@ -385,7 +385,7 @@ export function SourcesPanel({
       )}
 
       {/* Sources List */}
-      <div className="space-y-2 max-h-96 overflow-y-auto">
+      <div className="space-y-2 max-h-[50vh] sm:max-h-96 overflow-y-auto">
         {sources.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
             No sources yet. Click "Add Source" to create one.
@@ -394,7 +394,7 @@ export function SourcesPanel({
           sources.map((source) => (
             <div
               key={source.id}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 gap-2"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3">
@@ -425,11 +425,11 @@ export function SourcesPanel({
                   )}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap sm:shrink-0">
                 <button
                   onClick={() => setSinksSourceId(source.id)}
                   disabled={submitting}
-                  className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md"
+                  className="px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md"
                   title="Configure webhooks and telegram chats for this source"
                 >
                   Sinks
@@ -437,21 +437,21 @@ export function SourcesPanel({
                 <button
                   onClick={() => handleTogglePause(source)}
                   disabled={submitting}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                  className="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                 >
                   {source.enabled ? 'Pause' : 'Resume'}
                 </button>
                 <button
                   onClick={() => handleEdit(source)}
                   disabled={submitting}
-                  className="px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-md"
+                  className="px-3 py-2 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-md"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(source.id, source.name)}
                   disabled={submitting}
-                  className="px-3 py-1.5 text-xs font-medium text-error-600 hover:text-error-700 hover:bg-error-50 dark:hover:bg-error-900/30 rounded-md"
+                  className="px-3 py-2 text-xs font-medium text-error-600 hover:text-error-700 hover:bg-error-50 dark:hover:bg-error-900/30 rounded-md"
                 >
                   Delete
                 </button>

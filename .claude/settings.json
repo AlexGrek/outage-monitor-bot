@@ -17,6 +17,11 @@
       "Bash(ls:*)",
       "Bash(kubectl exec:*)",
       "Bash(go build:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/vedmedik/.claude/skills",
+      "/Users/vedmedik/dev/tg-monitor-bot/.claude/skills",
+      "/Users/vedmedik/.claude/skills/frontend"
     ]
   }
 }
