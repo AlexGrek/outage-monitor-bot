@@ -174,6 +174,13 @@ func (b *Bot) OnStatusChange(source *storage.Source, change *storage.StatusChang
 
 // SendTestMessage sends a test message to a specific chat (for testing notifications)
 func (b *Bot) SendTestMessage(ctx context.Context, chatID int64, text string) error {
+	return b.SendText(ctx, chatID, text)
+}
+
+// SendText sends a plain-text message to a specific chat.
+// No parse mode is used so arbitrary user-defined text (e.g. countdown templates)
+// is delivered verbatim without Markdown/HTML escaping concerns.
+func (b *Bot) SendText(ctx context.Context, chatID int64, text string) error {
 	_, err := b.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: chatID,
 		Text:   text,

@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Immediate persistence to BoltDB (survives restarts)
 - Duration tracking for uptime/downtime
 - Multi-sink notifications per source (Telegram, and more to come)
+- **Countdowns**: scheduled daily "days until a date" notifications to chosen sinks (see below)
 
 ## Architecture
 
@@ -133,6 +134,7 @@ PUT /config/TELEGRAM_TOKEN
 - `source_chats` - Many-to-many relationship (sourceID:chatID)
 - `status_changes` - Time-series history (keyed by sourceID + timestamp)
 - `config` - Application configuration (key-value pairs)
+- `countdowns` - Scheduled "days until a date" notifications (id → msgpack(Countdown); sinks embedded)
 
 **Key encoding:**
 - Sources: sourceID (string) → msgpack(Source)
@@ -639,6 +641,36 @@ Sets `Enabled=false`, stops sending notifications but continues checking.
 curl -X POST -H "X-API-Key: key" http://localhost:8080/sources/{source-id}/resume
 ```
 Sets `Enabled=true`, resumes notifications.
+
+### Countdown Endpoints
+
+**Countdowns** are independent of monitoring sources. A countdown sends a customizable message to chosen sinks (Telegram chats and/or webhooks) once per day at a configured time and timezone. Any `{}` in the message template is replaced with the number of whole days remaining until the target date (can be negative once the date has passed).
+
+Architecture: `countdownScheduler` ([internal/appmanager/countdown_scheduler.go](internal/appmanager/countdown_scheduler.go)) runs inside `BotProcess` (started/stopped with the bot, works in web-only mode too). It ticks once a minute and, for each enabled countdown, sends when "now" in the countdown's timezone has reached the notify time and nothing has been sent today (`LastSentDate` guard). This "send if past notify time and not yet sent today" rule makes it robust to restarts/downtime — a missed minute still sends once. Day count uses `time.LoadLocation` (tzdata is bundled in the Docker image) and rounds across DST. Storage is the `countdowns` bucket; sinks are embedded as `chat_ids` / `webhook_ids` on the `Countdown` record (not the source M2M buckets).
+
+**GET /countdowns** - List all countdowns
+
+**POST /countdowns** - Create a countdown
+```bash
+curl -X POST -H "X-API-Key: key" -H "Content-Type: application/json" \
+  -d '{
+    "name": "New Year",
+    "target_date": "2027-01-01",
+    "notify_time": "09:00",
+    "timezone": "Europe/Kyiv",
+    "message_template": "{} days until New Year!",
+    "chat_ids": [123456789],
+    "webhook_ids": []
+  }' \
+  http://localhost:8080/countdowns
+```
+`target_date` is `YYYY-MM-DD`, `notify_time` is 24h `HH:MM`, `timezone` is an IANA name. If the notify time has already passed today at creation, the first send is deferred to the next day (no surprise immediate send).
+
+**PUT /countdowns/:id** - Update a countdown (same body; changing date/time/timezone resets the daily-send guard).
+
+**DELETE /countdowns/:id** - Delete a countdown.
+
+**POST /countdowns/:id/test** - Send immediately to all sinks, regardless of schedule and without affecting the daily-send guard.
 
 ## Error Handling & Resilience
 

@@ -173,3 +173,29 @@ export interface SinkAssociation {
   sink_id: string
   sink_type: 'telegram' | 'webhook'
 }
+
+export interface Countdown {
+  id: string
+  name: string
+  target_date: string // "YYYY-MM-DD"
+  notify_time: string // "HH:MM" 24h
+  timezone: string // IANA name, e.g. "Europe/Kyiv"
+  message_template: string // "{}" replaced with days left
+  enabled: boolean
+  chat_ids: number[] | null
+  webhook_ids: string[] | null
+  last_sent_date: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CountdownRequest {
+  name: string
+  target_date: string
+  notify_time: string
+  timezone: string
+  message_template: string
+  enabled?: boolean
+  chat_ids: number[]
+  webhook_ids: string[]
+}

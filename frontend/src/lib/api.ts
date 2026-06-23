@@ -14,6 +14,8 @@ import type {
   UpdateWebhookRequest,
   TelegramChat,
   StatusChangeEvent,
+  Countdown,
+  CountdownRequest,
 } from '../types'
 
 const API_BASE = '/api'
@@ -251,6 +253,40 @@ class ApiClient {
     return this.request<{ message: string; source_id: string; chat_id: number }>(
       `/sources/${sourceId}/telegram-chats/${chatId}`,
       { method: 'DELETE' }
+    )
+  }
+
+  // Countdown endpoints (require auth)
+  async getCountdowns(): Promise<Countdown[]> {
+    return this.request<Countdown[]>('/countdowns')
+  }
+
+  async createCountdown(data: CountdownRequest): Promise<Countdown> {
+    return this.request<Countdown>('/countdowns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateCountdown(id: string, data: CountdownRequest): Promise<Countdown> {
+    return this.request<Countdown>(`/countdowns/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteCountdown(id: string): Promise<{ message: string; id: string }> {
+    return this.request<{ message: string; id: string }>(`/countdowns/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async testCountdown(
+    id: string
+  ): Promise<{ message: string; id: string; days_left: number; sent_at: string }> {
+    return this.request<{ message: string; id: string; days_left: number; sent_at: string }>(
+      `/countdowns/${id}/test`,
+      { method: 'POST' }
     )
   }
 

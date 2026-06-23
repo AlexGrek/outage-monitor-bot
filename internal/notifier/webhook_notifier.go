@@ -13,9 +13,9 @@ import (
 
 // WebhookPayload represents the payload sent to webhooks
 type WebhookPayload struct {
-	Source     *SourceData     `json:"source"`
+	Source       *SourceData       `json:"source"`
 	StatusChange *StatusChangeData `json:"status_change"`
-	Timestamp  string          `json:"timestamp"`
+	Timestamp    string            `json:"timestamp"`
 }
 
 // SourceData represents source information in webhook payload
@@ -83,6 +83,57 @@ func (wn *WebhookNotifier) OnStatusChange(source *storage.Source, change *storag
 			webhook.URL, source.Name, change.OldStatus, change.NewStatus)
 
 		go wn.sendWebhook(webhook, payload)
+	}
+}
+
+// CountdownPayload represents the payload sent to webhooks for a countdown notification
+type CountdownPayload struct {
+	Type        string `json:"type"` // always "countdown"
+	CountdownID string `json:"countdown_id"`
+	Name        string `json:"name"`
+	TargetDate  string `json:"target_date"`
+	DaysLeft    int    `json:"days_left"`
+	Message     string `json:"message"`
+	Timestamp   string `json:"timestamp"`
+}
+
+// SendCountdown sends a countdown notification to a single webhook.
+// It is fired by the countdown scheduler for each webhook sink.
+func (wn *WebhookNotifier) SendCountdown(webhook *storage.Webhook, payload CountdownPayload) {
+	if webhook == nil || !webhook.Enabled {
+		return
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		wn.logger.Printf("Failed to marshal countdown payload: %v", err)
+		return
+	}
+
+	req, err := http.NewRequest(webhook.Method, webhook.URL, bytes.NewReader(payloadBytes))
+	if err != nil {
+		wn.logger.Printf("Failed to create countdown webhook request: %v", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	for key, value := range webhook.Headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := wn.client.Do(req)
+	if err != nil {
+		wn.logger.Printf("Failed to send countdown webhook to %s: %v", webhook.URL, err)
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		wn.logger.Printf("Countdown webhook sent successfully to %s (status: %d)", webhook.URL, resp.StatusCode)
+		wn.storage.UpdateWebhookLastTriggered(webhook.ID)
+	} else {
+		wn.logger.Printf("Countdown webhook request failed for %s (status: %d, body: %s)",
+			webhook.URL, resp.StatusCode, string(body))
 	}
 }
 

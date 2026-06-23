@@ -10,6 +10,7 @@ import { ApiKeyModal } from './components/dashboard/ApiKeyModal'
 import { SourcesPanel } from './components/dashboard/SourcesPanel'
 import { TabNavigation, type TabId } from './components/dashboard/TabNavigation'
 import { SinksPanel } from './components/dashboard/SinksPanel'
+import { CountdownsPanel } from './components/dashboard/CountdownsPanel'
 import { EventsPanel } from './components/dashboard/EventsPanel'
 import { ToastContainer, type ToastMessage } from './components/dashboard/Toast'
 import type {
@@ -378,6 +379,9 @@ function App() {
 
         {/* Sinks Tab */}
         {activeTab === 'sinks' && <SinksPanel onToast={addToast} />}
+
+        {/* Countdowns Tab */}
+        {activeTab === 'countdowns' && <CountdownsPanel onToast={addToast} />}
 
         {/* Events Tab */}
         {activeTab === 'events' && <EventsPanel sources={sources} />}

@@ -22,10 +22,11 @@ type RestartFunc func() error
 type BotProcess struct {
 	config          *config.Config
 	storage         *storage.BoltDB
-	bot             *bot.Bot
-	monitor         *monitor.Monitor
-	webhookNotifier *notifier.WebhookNotifier
-	ctx             context.Context
+	bot                *bot.Bot
+	monitor            *monitor.Monitor
+	webhookNotifier    *notifier.WebhookNotifier
+	countdownScheduler *countdownScheduler
+	ctx                context.Context
 	cancel          context.CancelFunc
 	running         bool
 	healthy         bool
@@ -95,6 +96,10 @@ func (bp *BotProcess) Start(cfg *config.Config) error {
 			return nil               // Don't kill the app
 		}
 
+		// Start countdown scheduler (web-only: no Telegram, webhook sinks still work)
+		bp.countdownScheduler = newCountdownScheduler(bp.storage, nil, webhookNotifier)
+		go bp.countdownScheduler.run(bp.ctx)
+
 		bp.running = true
 		bp.healthy = true
 		bp.restartAttempts = 0
@@ -145,6 +150,10 @@ func (bp *BotProcess) Start(cfg *config.Config) error {
 
 	// Start bot in goroutine with error recovery
 	go bp.runBotWithRecovery(telegramBot)
+
+	// Start countdown scheduler (daily "days until a date" notifications)
+	bp.countdownScheduler = newCountdownScheduler(bp.storage, telegramBot, webhookNotifier)
+	go bp.countdownScheduler.run(bp.ctx)
 
 	bp.running = true
 	bp.healthy = true
@@ -221,6 +230,7 @@ func (bp *BotProcess) Stop() error {
 	bp.bot = nil
 	bp.monitor = nil
 	bp.webhookNotifier = nil
+	bp.countdownScheduler = nil
 
 	bp.logger.Println("Bot process stopped")
 
@@ -441,6 +451,13 @@ func (bp *BotProcess) GetWebhookNotifier() *notifier.WebhookNotifier {
 	bp.mu.Lock()
 	defer bp.mu.Unlock()
 	return bp.webhookNotifier
+}
+
+// GetCountdownScheduler returns the countdown scheduler instance (for test notifications)
+func (bp *BotProcess) GetCountdownScheduler() *countdownScheduler {
+	bp.mu.Lock()
+	defer bp.mu.Unlock()
+	return bp.countdownScheduler
 }
 
 // formatBotError converts cryptic Telegram API errors into user-friendly messages

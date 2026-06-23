@@ -17,6 +17,7 @@ const (
 	configBucket         = "config"
 	webhooksBucket       = "webhooks"
 	sourceWebhooksBucket = "source_webhooks"
+	countdownsBucket     = "countdowns"
 )
 
 // BoltDB wraps the bbolt database
@@ -61,6 +62,7 @@ func (b *BoltDB) initBuckets() error {
 			configBucket,
 			webhooksBucket,
 			sourceWebhooksBucket,
+			countdownsBucket,
 		}
 
 		for _, bucket := range buckets {

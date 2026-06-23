@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export type TabId = 'status' | 'sources' | 'sinks' | 'events'
+export type TabId = 'status' | 'sources' | 'sinks' | 'countdowns' | 'events'
 
 interface Tab {
   id: TabId
@@ -12,6 +12,7 @@ const TABS: Tab[] = [
   { id: 'status', label: 'Status & Config', icon: '⚙️' },
   { id: 'sources', label: 'Sources', icon: '📡' },
   { id: 'sinks', label: 'Sinks', icon: '📤' },
+  { id: 'countdowns', label: 'Countdowns', icon: '⏳' },
   { id: 'events', label: 'Events', icon: '📋' },
 ]
 

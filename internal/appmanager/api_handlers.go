@@ -50,6 +50,13 @@ func (am *AppManager) setupRoutes() {
 	am.echoServer.PUT("/webhooks/:id", am.handleUpdateWebhook)
 	am.echoServer.DELETE("/webhooks/:id", am.handleDeleteWebhook)
 
+	// Countdown endpoints
+	am.echoServer.GET("/countdowns", am.handleGetCountdowns)
+	am.echoServer.POST("/countdowns", am.handleCreateCountdown)
+	am.echoServer.POST("/countdowns/:id/test", am.handleTestCountdown)
+	am.echoServer.PUT("/countdowns/:id", am.handleUpdateCountdown)
+	am.echoServer.DELETE("/countdowns/:id", am.handleDeleteCountdown)
+
 	// Events endpoints
 	am.echoServer.GET("/events", am.handleGetEvents)
 
