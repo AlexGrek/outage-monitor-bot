@@ -1,0 +1,9 @@
+# Taskfile for tg-monitor-bot (https://taskfile.dev)
+# Run `task --list` to see available tasks.
+version: '3'
+
+tasks:
+  ship:
+    desc: Full production release (version-bump-minor → multi-arch build & push → helm reinstall)
+    cmds:
+      - make production-minor
