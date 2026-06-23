@@ -303,6 +303,23 @@ helm-upgrade: helm-package
 		--namespace $(HELM_NAMESPACE)
 	@echo "Chart upgraded successfully"
 
+# Timeout for atomic upgrades (waits for pods to become Ready)
+HELM_TIMEOUT?=5m
+
+# Safe upgrade: in-place (no uninstall, no data loss), waits for the new pods to
+# become Ready, and AUTOMATICALLY ROLLS BACK to the previous release if they
+# don't. This is what prevents a bad image from taking prod down.
+helm-upgrade-atomic: helm-package
+	@echo "Upgrading Helm chart (--atomic --wait, auto-rollback on failure)..."
+	helm upgrade $(HELM_RELEASE_NAME) \
+		helm/$(HELM_CHART_NAME)-$(VERSION).tgz \
+		--namespace $(HELM_NAMESPACE) \
+		--install \
+		--atomic \
+		--wait \
+		--timeout $(HELM_TIMEOUT)
+	@echo "✓ Chart upgraded (auto-rolled back if pods failed to become Ready)"
+
 # Uninstall Helm chart
 helm-uninstall:
 	@echo "Uninstalling Helm chart..."
@@ -314,6 +331,33 @@ helm-clean:
 	@echo "Cleaning Helm packages..."
 	rm -f helm/*.tgz
 	@echo "Helm packages cleaned"
+
+# Safe ship preflight: refuse to release a dirty tree or failing tests.
+# Shipping uncommitted code is unsafe — the running image would not match any
+# commit, so it could not be reproduced or reasoned about during an incident.
+ship-preflight:
+	@echo "Preflight: checking working tree is clean..."
+	@test -z "$$(git status --porcelain)" || { \
+		echo "✗ Working tree has uncommitted changes. Commit or stash before shipping:"; \
+		git status --short; \
+		exit 1; \
+	}
+	@echo "✓ Working tree clean"
+	@echo "Preflight: running Go tests..."
+	@go test ./... > /dev/null || { echo "✗ Tests failed — aborting ship"; exit 1; }
+	@echo "✓ Tests pass"
+
+# Safe production release used by `task ship`.
+# Preflight (clean tree + tests) → bump minor → build & push multi-arch image →
+# atomic in-place Helm upgrade (auto-rollback if the new pods are unhealthy).
+# No `helm uninstall` is performed, so the release and its data persist.
+ship: ship-preflight version-bump-minor docker-build-multiarch helm-upgrade-atomic
+	@echo ""
+	@echo "✓ Safe ship complete!"
+	@echo "  Version: $$(cat VERSION)"
+	@echo "  Image: $(DOCKER_TAG)"
+	@echo "  Helm: $(HELM_RELEASE_NAME) (namespace: $(HELM_NAMESPACE))"
+	@echo "  Note: VERSION/Chart.yaml were bumped — commit them: git commit -am 'Release '$$(cat VERSION)"
 
 # Production deployment targets
 production-patch: version-bump-patch docker-build-multiarch helm-reinstall
