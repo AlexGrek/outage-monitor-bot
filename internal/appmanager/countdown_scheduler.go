@@ -94,6 +94,15 @@ func (s *countdownScheduler) tick() {
 		}
 
 		go s.dispatch(c, daysLeft)
+
+		// Auto-delete if target date is reached or passed
+		if daysLeft <= 0 {
+			if err := s.storage.DeleteCountdown(c.ID); err != nil {
+				s.logger.Printf("Countdown %q: failed to auto-delete: %v", c.Name, err)
+			} else {
+				s.logger.Printf("Countdown %q: auto-deleted because it reached %d days left", c.Name, daysLeft)
+			}
+		}
 	}
 }
 
